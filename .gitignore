@@ -1,0 +1,17 @@
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+build/
+release/
+*.tar.gz
+*.zip
+.vscode/
+.idea/
+*.log
+tmp/
+plexichat-client
+plexichat-client-*
