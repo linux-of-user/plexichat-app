@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	"fyne.io/fyne/v2/app"
 
 	"plexichat-client/pkg/client"
 )
@@ -374,4 +375,27 @@ func (s *LoginScreen) GetContent() fyne.CanvasObject {
 func buildLoginScreen(win fyne.Window, serverAddr string) fyne.CanvasObject {
 	loginScreen := NewLoginScreen(win, serverAddr)
 	return loginScreen.GetContent()
+}
+
+
+// NewPlexiChatApp creates and configures the main application
+func NewPlexiChatApp() fyne.App {
+myApp := app.New()
+
+// Create main window
+win := myApp.NewWindow("PlexiChat Client v" + version)
+win.Resize(fyne.NewSize(1200, 800))
+win.CenterOnScreen()
+
+// Load last server or use default
+serverAddr := loadLastServer()
+if serverAddr == "" {
+serverAddr = "http://localhost:8000"
+}
+
+// Show login screen
+content := buildLoginScreen(win, serverAddr)
+win.SetContent(content)
+
+return myApp
 }
