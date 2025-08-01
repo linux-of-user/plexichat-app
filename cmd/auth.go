@@ -114,18 +114,18 @@ func runLogin(cmd *cobra.Command, args []string) error {
 
 	// Save token if requested
 	if save {
-		viper.Set("token", loginResp.Token)
+		viper.Set("token", loginResp.AccessToken)
 		viper.Set("refresh_token", loginResp.RefreshToken)
-		viper.Set("username", loginResp.User.Username)
-		viper.Set("user_id", loginResp.User.ID)
-		
+		viper.Set("username", loginResp.Username)
+		viper.Set("user_id", loginResp.UserID)
+
 		// Save to config file
 		configFile := viper.ConfigFileUsed()
 		if configFile == "" {
 			home, _ := os.UserHomeDir()
 			configFile = home + "/.plexichat-client.yaml"
 		}
-		
+
 		err = viper.WriteConfigAs(configFile)
 		if err != nil {
 			color.Yellow("Warning: Could not save token to config file: %v", err)
@@ -134,9 +134,9 @@ func runLogin(cmd *cobra.Command, args []string) error {
 
 	// Display success message
 	color.Green("✓ Login successful!")
-	fmt.Printf("Welcome, %s!\n", loginResp.User.Username)
-	fmt.Printf("User ID: %d\n", loginResp.User.ID)
-	fmt.Printf("Account Type: %s\n", loginResp.User.UserType)
+	fmt.Printf("Welcome, %s!\n", loginResp.Username)
+	fmt.Printf("User ID: %s\n", loginResp.UserID)
+	fmt.Printf("Account Type: %s\n", "user")
 	fmt.Printf("Token expires: %s\n", loginResp.ExpiresAt.Format(time.RFC3339))
 
 	return nil
@@ -210,17 +210,17 @@ func runRegister(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("registration request failed: %w", err)
 	}
 
-	var user client.User
-	err = c.ParseResponse(resp, &user)
+	var regResp *client.RegisterResponse
+	err = c.ParseResponse(resp, &regResp)
 	if err != nil {
 		return fmt.Errorf("registration failed: %w", err)
 	}
 
 	color.Green("✓ Registration successful!")
-	fmt.Printf("User ID: %d\n", user.ID)
-	fmt.Printf("Username: %s\n", user.Username)
-	fmt.Printf("Email: %s\n", user.Email)
-	fmt.Printf("Account Type: %s\n", user.UserType)
+	fmt.Printf("User ID: %s\n", regResp.UserID)
+	fmt.Printf("Username: %s\n", regResp.Username)
+	fmt.Printf("Email: %s\n", "N/A")
+	fmt.Printf("Account Type: %s\n", "user")
 	fmt.Println("You can now login with your credentials.")
 
 	return nil
@@ -243,19 +243,18 @@ func runWhoami(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get user info: %w", err)
 	}
 
-	var user client.User
-	err = c.ParseResponse(resp, &user)
+	var userResp *client.UserResponse
+	err = c.ParseResponse(resp, &userResp)
 	if err != nil {
 		return fmt.Errorf("failed to parse user info: %w", err)
 	}
 
-	fmt.Printf("Username: %s\n", user.Username)
-	fmt.Printf("User ID: %d\n", user.ID)
-	fmt.Printf("Email: %s\n", user.Email)
-	fmt.Printf("Account Type: %s\n", user.UserType)
-	fmt.Printf("Active: %t\n", user.IsActive)
-	fmt.Printf("Admin: %t\n", user.IsAdmin)
-	fmt.Printf("Created: %s\n", user.Created)
+	fmt.Printf("Username: %s\n", userResp.Username)
+	fmt.Printf("User ID: %s\n", userResp.ID)
+	fmt.Printf("Email: %s\n", userResp.Email)
+	fmt.Printf("Display Name: %s\n", userResp.DisplayName)
+	fmt.Printf("Active: %t\n", userResp.IsActive)
+	fmt.Printf("Created: %s\n", userResp.CreatedAt)
 
 	return nil
 }

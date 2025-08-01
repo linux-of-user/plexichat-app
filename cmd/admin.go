@@ -67,7 +67,7 @@ func init() {
 	adminCmd.AddCommand(adminUsersCmd)
 	adminCmd.AddCommand(adminStatsCmd)
 	adminCmd.AddCommand(adminConfigCmd)
-	
+
 	adminUsersCmd.AddCommand(adminUsersListCmd)
 	adminConfigCmd.AddCommand(adminConfigRateLimitCmd)
 	adminConfigCmd.AddCommand(adminConfigSecurityCmd)
@@ -140,23 +140,19 @@ func runAdminUsersList(cmd *cobra.Command, args []string) error {
 
 	// Display users in a table
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"ID", "Username", "Email", "Type", "Active", "Admin", "Created"})
-	table.SetBorder(false)
-	table.SetRowSeparator("-")
-	table.SetColumnSeparator("|")
-	table.SetCenterSeparator("+")
+	table.Header("ID", "Username", "Email", "Type", "Active", "Admin", "Created")
 
 	for _, user := range users {
 		active := "No"
 		if user.IsActive {
 			active = "Yes"
 		}
-		
+
 		admin := "No"
 		if user.IsAdmin {
 			admin = "Yes"
 		}
-		
+
 		table.Append([]string{
 			strconv.Itoa(user.ID),
 			user.Username,
@@ -206,7 +202,7 @@ func runAdminStats(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Total Rooms: %d\n", stats.TotalRooms)
 	fmt.Printf("Total Files: %d\n", stats.TotalFiles)
 	fmt.Printf("System Uptime: %s\n", stats.SystemUptime)
-	
+
 	color.Cyan("\n=== Resource Usage ===")
 	fmt.Printf("Memory Usage: %.2f MB\n", stats.MemoryUsage)
 	fmt.Printf("CPU Usage: %.2f%%\n", stats.CPUUsage)
@@ -230,7 +226,7 @@ func runAdminConfigRateLimit(cmd *cobra.Command, args []string) error {
 
 	// Build configuration object
 	config := client.RateLimitConfig{}
-	
+
 	if cmd.Flags().Changed("enable") {
 		config.Enabled = true
 	}
@@ -289,7 +285,7 @@ func runAdminConfigSecurity(cmd *cobra.Command, args []string) error {
 
 	// Build configuration object
 	config := client.SecurityConfig{}
-	
+
 	if cmd.Flags().Changed("max-login-attempts") {
 		config.MaxLoginAttempts, _ = cmd.Flags().GetInt("max-login-attempts")
 	}

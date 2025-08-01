@@ -76,6 +76,7 @@ func init() {
 	// Add built-in subcommands (others are registered in their respective files)
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(healthCmd)
+	rootCmd.AddCommand(guiCmd)
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -144,6 +145,16 @@ var versionCmd = &cobra.Command{
 		}
 
 		return nil
+	},
+}
+
+var guiCmd = &cobra.Command{
+	Use:   "gui",
+	Short: "Launch the graphical user interface",
+	Long:  "Launch the cross-platform graphical user interface for PlexiChat",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		fmt.Println("Launching PlexiChat GUI...")
+		return RunGUI()
 	},
 }
 

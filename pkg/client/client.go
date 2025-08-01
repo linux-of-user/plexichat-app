@@ -298,8 +298,8 @@ func (c *Client) Login(ctx context.Context, username, password string) (*LoginRe
 	}
 
 	// Set token for future requests if login was successful
-	if loginResp.Token != "" {
-		c.SetToken(loginResp.Token)
+	if loginResp.AccessToken != "" {
+		c.SetToken(loginResp.AccessToken)
 	}
 	return &loginResp, nil
 }
@@ -326,8 +326,8 @@ func (c *Client) LoginWith2FA(ctx context.Context, username, password, method, c
 	}
 
 	// Set token for future requests if 2FA was successful
-	if loginResp.Token != "" {
-		c.SetToken(loginResp.Token)
+	if loginResp.AccessToken != "" {
+		c.SetToken(loginResp.AccessToken)
 	}
 	return &loginResp, nil
 }
@@ -409,12 +409,13 @@ func (c *Client) Disable2FA(ctx context.Context, method, code string) (*TwoFADis
 }
 
 // Register creates a new user account
-func (c *Client) Register(ctx context.Context, username, email, password, userType string) (*User, error) {
+func (c *Client) Register(ctx context.Context, username, email, password, userType string) (*RegisterResponse, error) {
 	registerReq := &RegisterRequest{
 		Username: username,
 		Email:    email,
 		Password: password,
 		UserType: userType,
+		TermsAccepted: true,
 	}
 
 	resp, err := c.Post(ctx, "/api/v1/auth/register", registerReq)
@@ -422,28 +423,28 @@ func (c *Client) Register(ctx context.Context, username, email, password, userTy
 		return nil, err
 	}
 
-	var user User
-	err = c.ParseResponse(resp, &user)
-	return &user, err
+	var regResp RegisterResponse
+	err = c.ParseResponse(resp, &regResp)
+	return &regResp, err
 }
 
 // GetCurrentUser gets information about the current user
-func (c *Client) GetCurrentUser(ctx context.Context) (*User, error) {
-	resp, err := c.Get(ctx, "/api/v1/users/me")
+func (c *Client) GetCurrentUser(ctx context.Context) (*UserResponse, error) {
+	resp, err := c.Get(ctx, "/api/v1/auth/me")
 	if err != nil {
 		return nil, err
 	}
 
-	var user User
-	err = c.ParseResponse(resp, &user)
-	return &user, err
+	var userResp UserResponse
+	err = c.ParseResponse(resp, &userResp)
+	return &userResp, err
 }
 
 // SendMessage sends a message to a chat room
-func (c *Client) SendMessage(ctx context.Context, content string, roomID int) (*Message, error) {
+func (c *Client) SendMessage(ctx context.Context, content string, recipientID string) (*Message, error) {
 	sendReq := &SendMessageRequest{
 		Content: content,
-		RoomID:  roomID,
+		RecipientID: recipientID,
 	}
 
 	resp, err := c.Post(ctx, "/api/v1/messages", sendReq)
@@ -457,8 +458,8 @@ func (c *Client) SendMessage(ctx context.Context, content string, roomID int) (*
 }
 
 // GetMessages retrieves messages with pagination
-func (c *Client) GetMessages(ctx context.Context, roomID, limit, page int) (*MessageListResponse, error) {
-	endpoint := fmt.Sprintf("/api/v1/messages?room_id=%d&limit=%d&page=%d", roomID, limit, page)
+func (c *Client) GetMessages(ctx context.Context, otherUserID string, limit, page int) (*MessageListResponse, error) {
+	endpoint := fmt.Sprintf("/api/v1/messages/conversation/%s?limit=%d&page=%d", otherUserID, limit, page)
 	resp, err := c.Get(ctx, endpoint)
 	if err != nil {
 		return nil, err

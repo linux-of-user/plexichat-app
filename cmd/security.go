@@ -193,11 +193,7 @@ func runSecurityScan(cmd *cobra.Command, args []string) error {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Endpoint", "Vulnerability", "Severity", "Status"})
-	table.SetBorder(false)
-	table.SetRowSeparator("-")
-	table.SetColumnSeparator("|")
-	table.SetCenterSeparator("+")
+	table.Header("Endpoint", "Vulnerability", "Severity", "Status")
 
 	criticalCount := 0
 	highCount := 0
@@ -365,8 +361,7 @@ func runFullSecurityScan(c *client.Client, ctx context.Context) error {
 
 	// Display vulnerabilities
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Endpoint", "Type", "Severity", "Description"})
-	table.SetBorder(false)
+	table.Header("Endpoint", "Type", "Severity", "Description")
 
 	for _, result := range allResults {
 		table.Append([]string{

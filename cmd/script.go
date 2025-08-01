@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -635,21 +634,19 @@ func executeChatCommand(c *client.Client, command string, args []string) error {
 	switch command {
 	case "send":
 		// Parse args for room and message
-		roomID := 1
+		recipientID := "user1"
 		message := "Hello from script"
 
 		for i, arg := range args {
 			if arg == "--room" && i+1 < len(args) {
-				if id, err := strconv.Atoi(args[i+1]); err == nil {
-					roomID = id
-				}
+				recipientID = args[i+1]
 			}
 			if arg == "--message" && i+1 < len(args) {
 				message = args[i+1]
 			}
 		}
 
-		_, err := c.SendMessage(ctx, message, roomID)
+		_, err := c.SendMessage(ctx, message, recipientID)
 		return err
 	default:
 		return fmt.Errorf("unknown chat command: %s", command)

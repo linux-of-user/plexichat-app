@@ -38,6 +38,12 @@ build:
 	mkdir -p $(BUILD_DIR)
 	$(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PACKAGE)
 
+# Build the GUI version
+.PHONY: build-gui
+build-gui:
+	mkdir -p $(BUILD_DIR)
+	$(GOBUILD) -tags gui $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-gui$(shell go env GOEXE) $(MAIN_PACKAGE)
+
 # Build for multiple platforms
 .PHONY: build-all
 build-all: clean deps

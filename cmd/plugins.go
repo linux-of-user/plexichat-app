@@ -151,11 +151,7 @@ func runPluginsList(cmd *cobra.Command, args []string) error {
 
 	// Display plugins in table
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Version", "Status", "Description"})
-	table.SetBorder(false)
-	table.SetRowSeparator("-")
-	table.SetColumnSeparator("|")
-	table.SetCenterSeparator("+")
+	table.Header("Name", "Version", "Status", "Description")
 
 	for _, plugin := range filteredPlugins {
 		status := "Not Installed"
@@ -318,8 +314,7 @@ func runPluginsSearch(cmd *cobra.Command, args []string) error {
 
 	// Display search results
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Version", "Description", "Tags"})
-	table.SetBorder(false)
+	table.Header("Name", "Version", "Description", "Tags")
 
 	for _, plugin := range plugins {
 		description := plugin.Description

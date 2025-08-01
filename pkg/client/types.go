@@ -58,7 +58,7 @@ type TwoFALoginRequest struct {
 
 // 2FA Login Response (same as LoginResponse, but may include 2FA-required flag)
 type TwoFALoginResponse struct {
-	Token        string    `json:"token"`
+	AccessToken  string    `json:"access_token"`
 	RefreshToken string    `json:"refresh_token"`
 	ExpiresAt    time.Time `json:"expires_at"`
 	User         User      `json:"user"`
@@ -122,21 +122,31 @@ type LoginRequest struct {
 // LoginResponse represents a login response. It may or may not include a token.
 // If TwoFARequired is true, the client must perform a second step using the /login-2fa endpoint.
 type LoginResponse struct {
-	Token         string    `json:"token,omitempty"`
+	AccessToken   string    `json:"access_token,omitempty"`
 	RefreshToken  string    `json:"refresh_token,omitempty"`
 	ExpiresAt     time.Time `json:"expires_at,omitempty"`
-	User          *User     `json:"user,omitempty"`
+	Username      string    `json:"username,omitempty"`
+	UserID        string    `json:"user_id,omitempty"`
 	TwoFARequired bool      `json:"two_fa_required"`
 	Methods       []string  `json:"methods,omitempty"` // Available 2FA methods if required
 	Message       string    `json:"message,omitempty"`
 }
 
 // RegisterRequest represents a registration request
+// RegisterResponse represents a registration response
+type RegisterResponse struct {
+	Success  bool   `json:"success"`
+	Message  string `json:"message"`
+	UserID   string `json:"user_id"`
+	Username string `json:"username"`
+}
+
 type RegisterRequest struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	UserType string `json:"user_type,omitempty"` // "user" or "bot"
+	TermsAccepted bool   `json:"terms_accepted"`      // Required by server
 }
 
 // User represents a user
@@ -165,8 +175,10 @@ type Message struct {
 
 // SendMessageRequest represents a message sending request
 type SendMessageRequest struct {
-	Content string `json:"content"`
-	RoomID  int    `json:"room_id,omitempty"`
+	Content     string `json:"content"`
+	RecipientID string `json:"recipient_id"`
+	MessageType string `json:"message_type,omitempty"`
+	Encrypted   bool   `json:"encrypted,omitempty"`
 }
 
 // Room represents a chat room
@@ -345,4 +357,27 @@ type UserListResponse struct {
 	TotalPages int    `json:"total_pages"`
 	HasNext    bool   `json:"has_next"`
 	HasPrev    bool   `json:"has_prev"`
+}
+
+
+// MessageResponse represents a message response from the server
+type MessageResponse struct {
+ID          string `json:"id"`
+SenderID    string `json:"sender_id"`
+RecipientID string `json:"recipient_id"`
+Content     string `json:"content"`
+MessageType string `json:"message_type"`
+Encrypted   bool   `json:"encrypted"`
+Timestamp   string `json:"timestamp"`
+Read        bool   `json:"read"`
+}
+
+// UserResponse represents a user response from the server
+type UserResponse struct {
+ID          string `json:"id"`
+Username    string `json:"username"`
+Email       string `json:"email"`
+DisplayName string `json:"display_name"`
+CreatedAt   string `json:"created_at"`
+IsActive    bool   `json:"is_active"`
 }

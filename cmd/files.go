@@ -287,11 +287,7 @@ func runFilesList(cmd *cobra.Command, args []string) error {
 
 	// Display files in a table
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"ID", "Filename", "Size", "Type", "Uploaded"})
-	table.SetBorder(false)
-	table.SetRowSeparator("-")
-	table.SetColumnSeparator("|")
-	table.SetCenterSeparator("+")
+	table.Header("ID", "Filename", "Size", "Type", "Uploaded")
 
 	for _, file := range files {
 		size := fmt.Sprintf("%.2f MB", float64(file.Size)/1024/1024)

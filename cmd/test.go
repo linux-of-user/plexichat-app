@@ -61,7 +61,7 @@ func init() {
 	testAllCmd.Flags().String("username", "", "Test username")
 	testAllCmd.Flags().String("password", "", "Test password")
 	testAllCmd.Flags().String("test-file", "", "Path to test file for file upload tests")
-	testAllCmd.Flags().Int("room", 1, "Test room ID for chat tests")
+	testAllCmd.Flags().String("recipient", "user1", "Test recipient ID for chat tests")
 	testAllCmd.Flags().Int("messages", 5, "Number of test messages for chat tests")
 	testStressCmd.Flags().Int("concurrent", 10, "Number of concurrent connections")
 	testStressCmd.Flags().String("duration", "30s", "Test duration")
@@ -72,7 +72,7 @@ func runTestAll(cmd *cobra.Command, args []string) error {
 	username, _ := cmd.Flags().GetString("username")
 	password, _ := cmd.Flags().GetString("password")
 	testFile, _ := cmd.Flags().GetString("test-file")
-	roomID, _ := cmd.Flags().GetInt("room")
+	recipientID, _ := cmd.Flags().GetString("recipient")
 	messageCount, _ := cmd.Flags().GetInt("messages")
 
 	if username == "" || password == "" {
@@ -88,7 +88,7 @@ func runTestAll(cmd *cobra.Command, args []string) error {
 	suites := []func() *TestSuite{
 		runConnectionTests,
 		func() *TestSuite { return runAuthTests(username, password) },
-		func() *TestSuite { return runChatTests(username, password, roomID, messageCount) },
+		func() *TestSuite { return runChatTests(username, password, recipientID, messageCount) },
 		func() *TestSuite { return runFilesTests(username, password, testFile) },
 		runPerformanceTests,
 	}
@@ -329,7 +329,7 @@ func runAuthTests(username, password string) *TestSuite {
 		if err != nil {
 			return err
 		}
-		token = loginResp.Token
+		token = loginResp.AccessToken
 		return nil
 	})
 
@@ -357,7 +357,7 @@ func runAuthTests(username, password string) *TestSuite {
 	return suite
 }
 
-func runChatTests(username, password string, roomID int, messageCount int) *TestSuite {
+func runChatTests(username, password string, recipientID string, messageCount int) *TestSuite {
 	c := client.NewClient(viper.GetString("url"))
 	suite := &TestSuite{Name: "Chat Tests"}
 
@@ -369,7 +369,7 @@ func runChatTests(username, password string, roomID int, messageCount int) *Test
 		suite.runTest("Login", func() error { return err })
 		return suite
 	}
-	c.SetToken(loginResp.Token)
+	c.SetToken(loginResp.AccessToken)
 
 	suite.runTest("Get Rooms", func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -382,7 +382,7 @@ func runChatTests(username, password string, roomID int, messageCount int) *Test
 		for i := 0; i < messageCount; i++ {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			message := fmt.Sprintf("Test message %d from client test", i+1)
-			_, err := c.SendMessage(ctx, message, roomID)
+			_, err := c.SendMessage(ctx, message, recipientID)
 			cancel()
 			if err != nil {
 				return fmt.Errorf("failed to send message %d: %w", i+1, err)
@@ -395,7 +395,7 @@ func runChatTests(username, password string, roomID int, messageCount int) *Test
 	suite.runTest("Get Message History", func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		_, err := c.GetMessages(ctx, roomID, 20, 1)
+		_, err := c.GetMessages(ctx, recipientID, 20, 1)
 		return err
 	})
 
@@ -426,7 +426,7 @@ func runFilesTests(username, password, testFile string) *TestSuite {
 		suite.runTest("Login", func() error { return err })
 		return suite
 	}
-	c.SetToken(loginResp.Token)
+	c.SetToken(loginResp.AccessToken)
 
 	suite.runTest("List Files", func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

@@ -63,15 +63,16 @@ func init() {
 
 	// Send flags
 	sendCmd.Flags().StringP("message", "m", "", "Message content")
-	sendCmd.Flags().IntP("room", "r", 1, "Room ID")
+	sendCmd.Flags().StringP("recipient", "r", "", "Recipient User ID")
 	sendCmd.MarkFlagRequired("message")
+	sendCmd.MarkFlagRequired("recipient")
 
 	// Listen flags
 	listenCmd.Flags().IntP("room", "r", 1, "Room ID to listen to")
 	listenCmd.Flags().Bool("all", false, "Listen to all rooms")
 
 	// History flags
-	historyCmd.Flags().IntP("room", "r", 1, "Room ID")
+	historyCmd.Flags().StringP("recipient", "r", "", "Recipient User ID")
 	historyCmd.Flags().IntP("limit", "l", 50, "Number of messages to retrieve")
 	historyCmd.Flags().IntP("page", "p", 1, "Page number")
 }
@@ -83,7 +84,7 @@ func runSend(cmd *cobra.Command, args []string) error {
 	}
 
 	message, _ := cmd.Flags().GetString("message")
-	roomID, _ := cmd.Flags().GetInt("room")
+	recipientID, _ := cmd.Flags().GetString("recipient")
 
 	c := client.NewClient(viper.GetString("url"))
 	c.SetToken(token)
@@ -92,25 +93,27 @@ func runSend(cmd *cobra.Command, args []string) error {
 	defer cancel()
 
 	sendReq := &client.SendMessageRequest{
-		Content: message,
-		RoomID:  roomID,
+		Content:     message,
+		RecipientID: recipientID,
+		MessageType: "text",
+		Encrypted:   true,
 	}
 
-	resp, err := c.Post(ctx, "/api/v1/messages", sendReq)
+	resp, err := c.Post(ctx, "/api/v1/messages/send", sendReq)
 	if err != nil {
 		return fmt.Errorf("failed to send message: %w", err)
 	}
 
-	var msg client.Message
+	var msg client.MessageResponse
 	err = c.ParseResponse(resp, &msg)
 	if err != nil {
 		return fmt.Errorf("failed to parse response: %w", err)
 	}
 
 	color.Green("✓ Message sent successfully!")
-	fmt.Printf("Message ID: %d\n", msg.ID)
-	fmt.Printf("Room: %s (ID: %d)\n", msg.RoomName, msg.RoomID)
-	fmt.Printf("Timestamp: %s\n", msg.Timestamp.Format(time.RFC3339))
+	fmt.Printf("Message ID: %s\n", msg.ID)
+	fmt.Printf("Recipient: %s\n", recipientID)
+	fmt.Printf("Timestamp: %s\n", msg.Timestamp)
 
 	return nil
 }
@@ -121,7 +124,7 @@ func runListen(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not logged in. Use 'plexichat-client auth login' to authenticate")
 	}
 
-	roomID, _ := cmd.Flags().GetInt("room")
+	recipientID, _ := cmd.Flags().GetString("recipient")
 	listenAll, _ := cmd.Flags().GetBool("all")
 
 	c := client.NewClient(viper.GetString("url"))
@@ -130,7 +133,7 @@ func runListen(cmd *cobra.Command, args []string) error {
 	// Determine WebSocket endpoint
 	endpoint := "/ws/chat"
 	if !listenAll {
-		endpoint = fmt.Sprintf("/ws/chat/room/%d", roomID)
+		endpoint = fmt.Sprintf("/ws/chat/room/%d", recipientID)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -151,7 +154,7 @@ func runListen(cmd *cobra.Command, args []string) error {
 	if listenAll {
 		fmt.Println("Listening to all rooms... (Press Ctrl+C to exit)")
 	} else {
-		fmt.Printf("Listening to room %d... (Press Ctrl+C to exit)\n", roomID)
+		fmt.Printf("Listening to room %d... (Press Ctrl+C to exit)\n", recipientID)
 	}
 	fmt.Println(strings.Repeat("-", 50))
 
@@ -173,17 +176,17 @@ func runListen(cmd *cobra.Command, args []string) error {
 			case "message":
 				// Parse message data
 				msgData, _ := json.Marshal(wsMsg.Data)
-				var msg client.Message
+				var msg client.MessageResponse
 				json.Unmarshal(msgData, &msg)
 
 				// Display message
-				timestamp := msg.Timestamp.Format("15:04:05")
+				timestamp := msg.Timestamp
 				roomInfo := ""
 				if listenAll {
-					roomInfo = fmt.Sprintf("[%s] ", msg.RoomName)
+					roomInfo = fmt.Sprintf("[%s] ", "Direct Message")
 				}
-				
-				color.Cyan("[%s] %s%s: %s", timestamp, roomInfo, msg.Username, msg.Content)
+
+				color.Cyan("[%s] %s%s: %s", timestamp, roomInfo, "Unknown", msg.Content)
 
 			case "user_joined":
 				color.Yellow("→ User joined the room")
@@ -216,7 +219,7 @@ func runHistory(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not logged in. Use 'plexichat-client auth login' to authenticate")
 	}
 
-	roomID, _ := cmd.Flags().GetInt("room")
+	recipientID, _ := cmd.Flags().GetString("recipient")
 	limit, _ := cmd.Flags().GetInt("limit")
 	page, _ := cmd.Flags().GetInt("page")
 
@@ -226,7 +229,7 @@ func runHistory(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	endpoint := fmt.Sprintf("/api/v1/messages?room_id=%d&limit=%d&page=%d", roomID, limit, page)
+	endpoint := fmt.Sprintf("/api/v1/messages?room_id=%d&limit=%d&page=%d", recipientID, limit, page)
 	resp, err := c.Get(ctx, endpoint)
 	if err != nil {
 		return fmt.Errorf("failed to get message history: %w", err)
@@ -250,27 +253,23 @@ func runHistory(cmd *cobra.Command, args []string) error {
 
 	// Display messages in a table
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"ID", "Username", "Message", "Timestamp"})
-	table.SetBorder(false)
-	table.SetRowSeparator("-")
-	table.SetColumnSeparator("|")
-	table.SetCenterSeparator("+")
+	table.Header("ID", "Username", "Message", "Timestamp")
 
 	for _, msg := range messages {
 		content := msg.Content
 		if len(content) > 50 {
 			content = content[:47] + "..."
 		}
-		
+
 		table.Append([]string{
-			strconv.Itoa(msg.ID),
-			msg.Username,
+			"N/A",
+			"Unknown",
 			content,
-			msg.Timestamp.Format("2006-01-02 15:04:05"),
+			"N/A",
 		})
 	}
 
-	fmt.Printf("Message History - Room %d (Page %d of %d)\n", roomID, page, listResp.TotalPages)
+	fmt.Printf("Message History - Room %d (Page %d of %d)\n", recipientID, page, listResp.TotalPages)
 	table.Render()
 	fmt.Printf("Total messages: %d\n", listResp.Total)
 
@@ -289,7 +288,7 @@ func runRooms(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	resp, err := c.Get(ctx, "/api/v1/rooms")
+	resp, err := c.Get(ctx, "/api/v1/messages/conversations")
 	if err != nil {
 		return fmt.Errorf("failed to get rooms: %w", err)
 	}
@@ -312,23 +311,19 @@ func runRooms(cmd *cobra.Command, args []string) error {
 
 	// Display rooms in a table
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"ID", "Name", "Description", "Private", "Created"})
-	table.SetBorder(false)
-	table.SetRowSeparator("-")
-	table.SetColumnSeparator("|")
-	table.SetCenterSeparator("+")
+	table.Header("ID", "Name", "Description", "Private", "Created")
 
 	for _, room := range rooms {
 		description := room.Description
 		if len(description) > 40 {
 			description = description[:37] + "..."
 		}
-		
+
 		private := "No"
 		if room.IsPrivate {
 			private = "Yes"
 		}
-		
+
 		table.Append([]string{
 			strconv.Itoa(room.ID),
 			room.Name,
