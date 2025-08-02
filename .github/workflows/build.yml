@@ -1,0 +1,123 @@
+name: 🚀 Build PlexiChat Desktop
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+            ext: .exe
+            name: windows-amd64
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            ext: ""
+            name: linux-amd64
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+            ext: ""
+            name: darwin-amd64
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+            ext: ""
+            name: darwin-arm64
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🐹 Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: 📦 Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: 🔧 Install dependencies (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc pkg-config libgl1-mesa-dev xorg-dev
+
+    - name: 🔧 Install Fyne (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        go install fyne.io/fyne/v2/cmd/fyne@latest
+
+    - name: 🏗️ Build CLI
+      env:
+        CGO_ENABLED: 1
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+      run: |
+        go build -ldflags "-X main.version=${{ github.ref_name }} -X main.buildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X main.commit=${{ github.sha }} -s -w" -o build/PlexiChat-CLI-${{ matrix.name }}${{ matrix.ext }} .
+
+    - name: 🎨 Build GUI (Windows)
+      if: matrix.os == 'windows-latest'
+      env:
+        CGO_ENABLED: 1
+      run: |
+        fyne package -name PlexiChat-Desktop -icon icon.png
+        if (Test-Path "PlexiChat-Desktop.exe") {
+          Move-Item "PlexiChat-Desktop.exe" "build/PlexiChat-Desktop-${{ matrix.name }}.exe"
+        }
+
+    - name: 🧪 Test builds
+      run: |
+        ./build/PlexiChat-CLI-${{ matrix.name }}${{ matrix.ext }} --version
+
+    - name: 📤 Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: plexichat-${{ matrix.name }}
+        path: build/*
+
+  release:
+    name: 🎉 Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 📥 Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: artifacts
+
+    - name: 📦 Prepare release assets
+      run: |
+        mkdir -p release
+        find artifacts -name "PlexiChat-*" -type f -exec cp {} release/ \;
+        ls -la release/
+
+    - name: 🎉 Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: "PlexiChat Desktop ${{ github.ref_name }} - The Phoenix Release"
+        body_path: RELEASE_NOTES.md
+        prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+        files: release/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

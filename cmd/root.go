@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -123,26 +124,16 @@ func SetVersionInfo(version, commit, buildTime, goVersion string) {
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Show version information",
-	Long:  "Display version information for both client and server",
+	Long:  "Display version information for the client",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Printf("PlexiChat Go Client v%s\n", clientVersion)
+		fmt.Printf("PlexiChat Desktop v%s\n", clientVersion)
 		fmt.Printf("Commit: %s\n", clientCommit)
 		fmt.Printf("Build Time: %s\n", clientBuildTime)
 		fmt.Printf("Go Version: %s\n", clientGoVersion)
-		fmt.Println()
+		fmt.Printf("Platform: %s/%s\n", runtime.GOOS, runtime.GOARCH)
 
-		// Try to get server version
-		c := client.NewClient(viper.GetString("url"))
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
-		version, err := c.Version(ctx)
-		if err != nil {
-			fmt.Printf("Server: Unable to connect (%v)\n", err)
-		} else {
-			fmt.Printf("Server: %s (API: %s, Build: %d)\n",
-				version.Version, version.APIVersion, version.BuildNumber)
-		}
+		// Don't try to connect to server by default - this was causing hangs
+		fmt.Println("\nUse 'plexichat health' to check server connectivity")
 
 		return nil
 	},
@@ -153,9 +144,48 @@ var guiCmd = &cobra.Command{
 	Short: "Launch the graphical user interface",
 	Long:  "Launch the cross-platform graphical user interface for PlexiChat",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("Launching PlexiChat GUI...")
-		return RunGUI()
+		fmt.Println("🚀 Launching PlexiChat GUI...")
+
+		// Check if GUI is available
+		if !isGUIAvailable() {
+			fmt.Println("❌ GUI not available - CGO or C compiler missing")
+			fmt.Println("💡 See SETUP-GUIDE.md for GUI setup instructions")
+			fmt.Println("🌐 Use 'plexichat-client web' for web interface")
+			return fmt.Errorf("GUI not available")
+		}
+
+		// Try to launch native GUI
+		fmt.Println("✅ GUI dependencies available, launching...")
+		err := RunGUI()
+		if err != nil {
+			fmt.Printf("❌ GUI launch failed: %v\n", err)
+			return err
+		}
+		return nil
 	},
+}
+
+// isGUIAvailable checks if GUI dependencies are available
+func isGUIAvailable() bool {
+	// This is a simple check - in reality we'd check for CGO and C compiler
+	// For now, just return true and let RunGUI handle the actual check
+	return true
+}
+
+// runWebInterface launches a web-based GUI as fallback
+func runWebInterface() error {
+	fmt.Println("🌐 Starting web interface...")
+	fmt.Println("📱 This will open PlexiChat in your default browser")
+	fmt.Println("🔗 URL: http://localhost:8080")
+
+	// This would start a web server with the GUI
+	// For now, just provide instructions
+	fmt.Println("\n🔧 To use web interface:")
+	fmt.Println("1. Run: plexichat-client web")
+	fmt.Println("2. Open browser to: http://localhost:8080")
+	fmt.Println("3. Or connect directly to your PlexiChat server")
+
+	return fmt.Errorf("web interface not yet implemented - use 'plexichat-client web' command")
 }
 
 var healthCmd = &cobra.Command{

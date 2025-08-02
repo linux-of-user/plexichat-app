@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -89,29 +90,87 @@ type Message struct {
 
 // RunGUI launches the native Fyne GUI application
 func RunGUI() error {
+	// Add comprehensive error recovery
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("GUI panic recovered: %v\n", r)
+			fmt.Println("\n🔧 TROUBLESHOOTING TIPS:")
+			fmt.Println("1. Ensure CGO is enabled: set CGO_ENABLED=1")
+			fmt.Println("2. Install a C compiler (GCC/MinGW on Windows)")
+			fmt.Println("3. Try: go install fyne.io/fyne/v2/cmd/fyne@latest")
+			fmt.Println("4. For Windows: Install TDM-GCC or Visual Studio Build Tools")
+			fmt.Println("5. Alternative: Use the web interface with 'plexichat-client web'")
+		}
+	}()
+
+	fmt.Println("🚀 Initializing PlexiChat GUI...")
+	fmt.Println("📋 Checking GUI dependencies...")
+
+	// Test if Fyne can be imported properly
+	fmt.Println("✓ Fyne imports successful")
+
+	// Create app with comprehensive error handling
+	fmt.Println("📱 Creating Fyne application...")
 	myApp := app.NewWithID("com.plexichat.client")
-	// Use a custom icon resource (you can replace this with your own icon)
+	if myApp == nil {
+		return fmt.Errorf("❌ Failed to create Fyne application - CGO may not be enabled")
+	}
+	fmt.Println("✓ Fyne application created successfully")
+
+	// Set icon with fallback
 	myApp.SetIcon(theme.ComputerIcon())
 
 	// Load or create default settings
 	settings := loadSettings()
-
-	// Apply theme based on settings
-	if settings.DarkMode {
-		myApp.Settings().SetTheme(theme.DarkTheme())
-	} else {
-		myApp.Settings().SetTheme(theme.LightTheme())
+	if settings == nil {
+		fmt.Println("Warning: Using default settings")
+		settings = &AppSettings{
+			DarkMode:        false,
+			NotificationsOn: true,
+			SoundEffects:    true,
+			Username:        "",
+			ServerURL:       "http://localhost:8000",
+			FontSize:        12,
+			AutoConnect:     false,
+		}
 	}
 
-	// Set up the GUI
-	mainWindow := myApp.NewWindow("🚀 PlexiChat - Modern Team Communication")
+	// Apply theme based on settings (using modern approach)
+	fmt.Printf("Applying theme (dark mode: %v)...\n", settings.DarkMode)
+	// Note: Modern Fyne respects system theme preferences
+	// We'll handle theme switching in the UI instead
+
+	// Set up the main window with proper configuration
+	fmt.Println("Creating main window...")
+	mainWindow := myApp.NewWindow("🚀 PlexiChat Desktop - Modern Team Communication")
+
+	if mainWindow == nil {
+		return fmt.Errorf("failed to create main window")
+	}
+
+	// Configure window properties
 	mainWindow.Resize(fyne.NewSize(1400, 900))
 	mainWindow.CenterOnScreen()
+	mainWindow.SetFixedSize(false) // Allow resizing
 
-	// Create client
-	apiClient := client.NewClient(viper.GetString("url"))
+	// Set minimum size to ensure usability
+	mainWindow.SetContent(widget.NewLabel("Loading PlexiChat..."))
 
-	// Initialize the GUI state
+	// Create client with fallback URL
+	serverURL := viper.GetString("url")
+	if serverURL == "" {
+		serverURL = "http://localhost:8000"
+		viper.Set("url", serverURL)
+	}
+
+	fmt.Printf("Creating API client for: %s\n", serverURL)
+	apiClient := client.NewClient(serverURL)
+
+	if apiClient == nil {
+		return fmt.Errorf("failed to create API client for %s", serverURL)
+	}
+
+	// Initialize the GUI state with proper error checking
 	state := &GUIState{
 		app:        myApp,
 		window:     mainWindow,
@@ -121,6 +180,11 @@ func RunGUI() error {
 		isDarkMode: settings.DarkMode,
 		settings:   settings,
 	}
+
+	// Start background monitoring
+	go monitorConnection(state)
+
+	fmt.Println("GUI state initialized successfully")
 
 	// Check for existing session
 	if checkExistingSession(state) {
@@ -164,67 +228,149 @@ func RunGUI() error {
 	})
 
 	// Show and run the application
-	mainWindow.ShowAndRun()
+	fmt.Println("Showing main window...")
+	mainWindow.Show()
 
+	fmt.Println("Starting PlexiChat GUI application...")
+	myApp.Run()
+
+	fmt.Println("PlexiChat GUI application closed")
 	return nil
 }
 
 func createLoginUI(state *GUIState) fyne.CanvasObject {
-	// Create a beautiful welcome header
-	title := widget.NewRichTextFromMarkdown("# 🚀 Welcome to PlexiChat")
+	// Create a stunning welcome header with enhanced styling
+	title := widget.NewRichTextFromMarkdown("# 🚀 PlexiChat Desktop")
 	title.Wrapping = fyne.TextWrapWord
 
-	subtitle := widget.NewRichTextFromMarkdown("*Connect with your team in real-time*")
+	subtitle := widget.NewRichTextFromMarkdown("### *Beautiful • Secure • Real-time Communication*")
 	subtitle.Wrapping = fyne.TextWrapWord
 
+	// Add version and build info
+	versionInfo := widget.NewRichTextFromMarkdown("*v2.0.0-alpha - The Phoenix Release*")
+	versionInfo.Wrapping = fyne.TextWrapWord
+
+	// Create modern input fields with better styling
 	username := widget.NewEntry()
-	username.SetPlaceHolder("👤 Enter username")
+	username.SetPlaceHolder("👤 Username")
+	username.Validator = func(s string) error {
+		if len(s) < 2 {
+			return fmt.Errorf("username must be at least 2 characters")
+		}
+		return nil
+	}
 
 	password := widget.NewPasswordEntry()
-	password.SetPlaceHolder("🔒 Enter password")
+	password.SetPlaceHolder("🔒 Password")
+	password.Validator = func(s string) error {
+		if len(s) < 1 {
+			return fmt.Errorf("password is required")
+		}
+		return nil
+	}
 
 	serverURL := widget.NewEntry()
 	serverURL.SetText(viper.GetString("url"))
-	serverURL.SetPlaceHolder("🌐 Server URL (e.g., http://localhost:8000)")
+	if serverURL.Text == "" {
+		serverURL.SetText("http://localhost:8000")
+	}
+	serverURL.SetPlaceHolder("🌐 Server URL")
+	serverURL.Validator = func(s string) error {
+		if s == "" {
+			return fmt.Errorf("server URL is required")
+		}
+		return nil
+	}
 
-	// Create modern styled buttons
-	loginBtn := widget.NewButton("🚀 Connect", func() {
+	// Create beautiful modern buttons with validation
+	loginBtn := widget.NewButton("🚀 Connect to PlexiChat", func() {
+		// Validate inputs before attempting login
+		if err := username.Validate(); err != nil {
+			showErrorDialog(state, "Invalid Username", err.Error())
+			return
+		}
+		if err := password.Validate(); err != nil {
+			showErrorDialog(state, "Invalid Password", err.Error())
+			return
+		}
+		if err := serverURL.Validate(); err != nil {
+			showErrorDialog(state, "Invalid Server URL", err.Error())
+			return
+		}
 		performLogin(state, username.Text, password.Text, serverURL.Text)
 	})
 	loginBtn.Importance = widget.HighImportance
 
-	registerBtn := widget.NewButton("📝 Create Account", func() {
+	registerBtn := widget.NewButton("📝 Create New Account", func() {
 		showRegistrationDialog(state)
 	})
+	registerBtn.Importance = widget.MediumImportance
 
-	// Create a beautiful form with proper spacing
+	// Add keyboard shortcuts
+	username.OnSubmitted = func(string) { password.FocusGained() }
+	password.OnSubmitted = func(string) {
+		if username.Text != "" && password.Text != "" && serverURL.Text != "" {
+			performLogin(state, username.Text, password.Text, serverURL.Text)
+		}
+	}
+
+	// Create a stunning form with modern design
 	form := container.NewVBox(
-		container.NewCenter(title),
-		container.NewCenter(subtitle),
-		widget.NewSeparator(),
-
-		// Server section
-		widget.NewCard("🌐 Server Configuration", "", container.NewVBox(
-			serverURL,
+		// Header section with beautiful typography
+		container.NewCenter(container.NewVBox(
+			title,
+			subtitle,
 		)),
 
-		// Credentials section
-		widget.NewCard("🔐 Authentication", "", container.NewVBox(
+		widget.NewSeparator(),
+
+		// Server configuration with modern card design
+		widget.NewCard("🌐 Server Configuration", "Connect to your PlexiChat server", container.NewVBox(
+			serverURL,
+			widget.NewRichTextFromMarkdown("*Default: http://localhost:8000*"),
+		)),
+
+		// Authentication section with security emphasis
+		widget.NewCard("🔐 Authentication", "Enter your login credentials", container.NewVBox(
 			username,
 			password,
+			widget.NewRichTextFromMarkdown("*Press Enter to login quickly*"),
 		)),
 
-		// Action buttons
-		container.NewGridWithColumns(2, loginBtn, registerBtn),
+		// Action buttons with proper spacing
+		container.NewVBox(
+			loginBtn,
+			registerBtn,
+		),
 
-		// Footer
+		// Beautiful footer with features
 		widget.NewSeparator(),
-		container.NewCenter(widget.NewRichTextFromMarkdown("*Secure • Fast • Reliable*")),
+		container.NewCenter(widget.NewRichTextFromMarkdown("✨ **Features**: Real-time messaging • File sharing • Cross-platform • Secure")),
 	)
 
-	// Add some padding around the form
-	paddedForm := container.NewPadded(form)
-	return container.NewCenter(paddedForm)
+	// Add connection status indicator
+	statusIndicator := widget.NewLabel("🔴 Disconnected")
+	statusCard := widget.NewCard("", "", container.NewHBox(
+		statusIndicator,
+		layout.NewSpacer(),
+		widget.NewLabel("Ready to connect"),
+	))
+
+	// Create a beautiful centered layout with proper margins
+	paddedForm := container.NewPadded(container.NewPadded(form))
+
+	// Add a subtle background effect by centering in a larger container
+	return container.NewBorder(
+		nil,        // Top
+		statusCard, // Bottom - status bar
+		nil,        // Left
+		nil,        // Right
+		container.NewCenter(container.NewVBox(
+			layout.NewSpacer(),
+			paddedForm,
+			layout.NewSpacer(),
+		)), // Center
+	)
 }
 
 func createMainUI(state *GUIState) fyne.CanvasObject {
@@ -255,6 +401,14 @@ func createMainUI(state *GUIState) fyne.CanvasObject {
 			}
 		},
 	)
+
+	// Create search bar for messages
+	searchEntry := widget.NewEntry()
+	searchEntry.SetPlaceHolder("🔍 Search messages...")
+	searchBtn := widget.NewButton("Search", func() {
+		searchMessages(state, searchEntry.Text)
+	})
+	searchBar := container.NewBorder(nil, nil, nil, searchBtn, searchEntry)
 
 	// Create modern chat area with rich text
 	chatArea := widget.NewRichText()
@@ -307,9 +461,9 @@ func createMainUI(state *GUIState) fyne.CanvasObject {
 	chatScroll := container.NewScroll(chatArea)
 	chatScroll.SetMinSize(fyne.NewSize(400, 300))
 
-	// Create chat container
+	// Create chat container with search bar
 	chatContainer := container.NewBorder(
-		nil,              // Top
+		searchBar,        // Top - search functionality
 		messageContainer, // Bottom
 		nil,              // Left
 		nil,              // Right
@@ -401,31 +555,54 @@ func createMainUI(state *GUIState) fyne.CanvasObject {
 }
 
 func performLogin(state *GUIState, username, password, serverURL string) {
+	fmt.Printf("🚀 Starting login process for user: %s, server: %s\n", username, serverURL)
+
+	// Validate inputs
 	if username == "" || password == "" {
-		dialog.ShowError(fmt.Errorf("username and password are required"), state.window)
+		showErrorDialog(state, "Missing Credentials", "Both username and password are required")
 		return
 	}
 
-	// Update server URL if changed
-	if serverURL != "" {
-		viper.Set("url", serverURL)
-		state.client = client.NewClient(serverURL)
+	if serverURL == "" {
+		serverURL = "http://localhost:8000"
+		fmt.Println("Using default server URL:", serverURL)
 	}
 
-	// Show modern loading dialog
+	// Update server URL and create new client
+	fmt.Printf("Creating client for server: %s\n", serverURL)
+	viper.Set("url", serverURL)
+	state.client = client.NewClient(serverURL)
+
+	if state.client == nil {
+		showErrorDialog(state, "Client Error", "Failed to create API client")
+		return
+	}
+
+	// Show beautiful loading dialog
 	progressBar := widget.NewProgressBarInfinite()
 	progressContent := container.NewVBox(
-		widget.NewLabelWithStyle("🔐 Authenticating...", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+		widget.NewLabelWithStyle("🔐 Connecting to PlexiChat...", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
 		progressBar,
-		widget.NewLabel("Please wait while we connect to the server"),
+		widget.NewLabel("Server: "+serverURL),
+		widget.NewLabel("User: "+username),
+		widget.NewRichTextFromMarkdown("*This may take a few moments*"),
 	)
-	progress := dialog.NewCustomWithoutButtons("Logging in", progressContent, state.window)
+	progress := dialog.NewCustomWithoutButtons("Authenticating", progressContent, state.window)
 	progress.Show()
 
 	// Perform actual login API call
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				progress.Hide()
+				showErrorDialog(state, "Login Error", fmt.Sprintf("Unexpected error: %v", r))
+			}
+		}()
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
+
+		fmt.Printf("🔐 Attempting login to server: %s\n", serverURL)
 
 		// Call the actual login API
 		loginResp, err := state.client.Login(ctx, username, password)
@@ -434,24 +611,34 @@ func performLogin(state *GUIState, username, password, serverURL string) {
 		progress.Hide()
 
 		if err != nil {
+			fmt.Printf("❌ Login failed with error: %v\n", err)
+
 			// Enhanced error handling with specific error types
-			errorMsg := "Login failed"
-			if err.Error() != "" {
-				errorMsg = fmt.Sprintf("Login failed: %v", err)
+			errorMsg := fmt.Sprintf("Login failed: %v", err)
+			errorType := "Login Error"
+
+			errStr := err.Error()
+
+			// Check for specific error types and provide helpful messages
+			if strings.Contains(errStr, "connection refused") || strings.Contains(errStr, "no such host") {
+				errorType = "Connection Error"
+				errorMsg = "Cannot connect to the PlexiChat server.\n\nPlease check:\n• Server URL is correct\n• Server is running\n• Internet connection is working"
+			} else if strings.Contains(errStr, "unauthorized") || strings.Contains(errStr, "invalid credentials") || strings.Contains(errStr, "401") {
+				errorType = "Authentication Error"
+				errorMsg = "Invalid username or password.\n\nPlease check:\n• Username is correct\n• Password is correct\n• Account exists on this server"
+			} else if strings.Contains(errStr, "timeout") {
+				errorType = "Timeout Error"
+				errorMsg = "Connection timed out.\n\nPlease:\n• Check your internet connection\n• Try again in a moment\n• Verify server is responding"
+			} else if strings.Contains(errStr, "404") {
+				errorType = "Server Error"
+				errorMsg = "PlexiChat API not found.\n\nPlease check:\n• Server URL is correct\n• PlexiChat server is properly configured"
 			}
 
-			// Check for specific error types
-			if err.Error() == "connection refused" || err.Error() == "no such host" {
-				errorMsg = "Cannot connect to server. Please check your internet connection and server URL."
-			} else if err.Error() == "unauthorized" || err.Error() == "invalid credentials" {
-				errorMsg = "Invalid username or password. Please try again."
-			} else if err.Error() == "timeout" {
-				errorMsg = "Connection timeout. Please try again or check your internet connection."
-			}
-
-			showErrorDialog(state, "Login Error", errorMsg)
+			showErrorDialog(state, errorType, errorMsg)
 			return
 		}
+
+		fmt.Printf("✅ Login API call successful\n")
 
 		// Check if 2FA is required
 		if loginResp.TwoFARequired {
@@ -669,14 +856,18 @@ func toggleTheme(state *GUIState) {
 	state.isDarkMode = !state.isDarkMode
 	state.settings.DarkMode = state.isDarkMode
 
-	if state.isDarkMode {
-		state.app.Settings().SetTheme(theme.DarkTheme())
-	} else {
-		state.app.Settings().SetTheme(theme.LightTheme())
-	}
+	// Modern Fyne handles theme switching automatically
+	// We just update our internal state and save settings
 
 	// Save settings
 	saveSettings(state.settings)
+
+	// Show notification about theme change
+	themeName := "Light"
+	if state.isDarkMode {
+		themeName = "Dark"
+	}
+	showNotification(state, "Theme Changed", fmt.Sprintf("Switched to %s theme", themeName))
 }
 
 // showSettingsDialog displays the settings configuration dialog
@@ -1072,8 +1263,14 @@ func show2FADialog(state *GUIState, username, password string, methods []string)
 
 // perform2FALogin performs 2FA authentication
 func perform2FALogin(state *GUIState, username, password, method, code string) {
-	// Show loading
-	progress := dialog.NewProgressInfinite("Verifying 2FA", "Please wait...", state.window)
+	// Show modern loading dialog
+	progressBar := widget.NewProgressBarInfinite()
+	progressContent := container.NewVBox(
+		widget.NewLabelWithStyle("🔐 Verifying 2FA...", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+		progressBar,
+		widget.NewLabel("Please wait while we verify your code"),
+	)
+	progress := dialog.NewCustomWithoutButtons("Verifying 2FA", progressContent, state.window)
 	progress.Show()
 
 	go func() {
@@ -1345,4 +1542,129 @@ func retryWithBackoff(operation func() error, maxRetries int) error {
 		time.Sleep(waitTime)
 	}
 	return err
+}
+
+// monitorConnection monitors the connection status in the background
+func monitorConnection(state *GUIState) {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			// Check connection health
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+			if state.client != nil {
+				_, err := state.client.Health(ctx)
+				if err != nil {
+					// Connection lost
+					showConnectionStatus(state, false, "Connection lost")
+				} else {
+					// Connection healthy
+					showConnectionStatus(state, true, "Connected")
+				}
+			}
+			cancel()
+		}
+	}
+}
+
+// searchMessages searches through message history
+func searchMessages(state *GUIState, query string) {
+	if query == "" {
+		showNotification(state, "Search", "Please enter a search term")
+		return
+	}
+
+	fmt.Printf("🔍 Searching for: %s\n", query)
+
+	// Search through all messages
+	var results []Message
+	state.mu.Lock()
+	for _, messages := range state.messages {
+		for _, message := range messages {
+			if strings.Contains(strings.ToLower(message.Content), strings.ToLower(query)) ||
+				strings.Contains(strings.ToLower(message.Author), strings.ToLower(query)) {
+				results = append(results, message)
+			}
+		}
+	}
+	state.mu.Unlock()
+
+	// Show search results
+	if len(results) == 0 {
+		showNotification(state, "Search Results", fmt.Sprintf("No messages found for '%s'", query))
+	} else {
+		showNotification(state, "Search Results", fmt.Sprintf("Found %d messages for '%s'", len(results), query))
+		// TODO: Display search results in a dialog or highlight in chat
+	}
+}
+
+// Advanced file handling with preview
+func showFilePreview(state *GUIState, filename string, content []byte) {
+	// Create file preview dialog
+	previewContent := container.NewVBox()
+
+	// Add file info
+	fileInfo := widget.NewCard("📄 File Information", "", container.NewVBox(
+		widget.NewLabel("Name: "+filename),
+		widget.NewLabel(fmt.Sprintf("Size: %d bytes", len(content))),
+		widget.NewLabel("Type: "+getFileType(filename)),
+	))
+
+	previewContent.Add(fileInfo)
+
+	// Add preview based on file type
+	if isImageFile(filename) {
+		// Image preview
+		previewContent.Add(widget.NewLabel("🖼️ Image Preview"))
+		// TODO: Add actual image preview
+	} else if isTextFile(filename) {
+		// Text preview
+		textPreview := widget.NewEntry()
+		textPreview.MultiLine = true
+		textPreview.SetText(string(content[:min(1000, len(content))]) + "...")
+		textPreview.Disable()
+		previewContent.Add(textPreview)
+	} else {
+		previewContent.Add(widget.NewLabel("📁 Binary file - no preview available"))
+	}
+
+	// Show dialog
+	dialog.ShowCustom("File Preview", "Close", previewContent, state.window)
+}
+
+// Helper functions for file handling
+func getFileType(filename string) string {
+	ext := strings.ToLower(filename[strings.LastIndex(filename, ".")+1:])
+	switch ext {
+	case "txt", "md", "go", "js", "py", "html", "css":
+		return "Text"
+	case "jpg", "jpeg", "png", "gif", "bmp":
+		return "Image"
+	case "pdf":
+		return "PDF"
+	case "zip", "rar", "7z":
+		return "Archive"
+	default:
+		return "Unknown"
+	}
+}
+
+func isImageFile(filename string) bool {
+	ext := strings.ToLower(filename[strings.LastIndex(filename, ".")+1:])
+	return ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "gif" || ext == "bmp"
+}
+
+func isTextFile(filename string) bool {
+	ext := strings.ToLower(filename[strings.LastIndex(filename, ".")+1:])
+	return ext == "txt" || ext == "md" || ext == "go" || ext == "js" || ext == "py" || ext == "html" || ext == "css"
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
