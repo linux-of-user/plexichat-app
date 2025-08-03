@@ -90,32 +90,43 @@ type Message struct {
 
 // RunGUI launches the native Fyne GUI application
 func RunGUI() error {
+	return RunGUIWithOptions(false)
+}
+
+// RunGUIWithOptions launches the GUI with optional debug logging
+func RunGUIWithOptions(debug bool) error {
 	// Add comprehensive error recovery
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Printf("GUI panic recovered: %v\n", r)
-			fmt.Println("\n🔧 TROUBLESHOOTING TIPS:")
-			fmt.Println("1. Ensure CGO is enabled: set CGO_ENABLED=1")
-			fmt.Println("2. Install a C compiler (GCC/MinGW on Windows)")
-			fmt.Println("3. Try: go install fyne.io/fyne/v2/cmd/fyne@latest")
-			fmt.Println("4. For Windows: Install TDM-GCC or Visual Studio Build Tools")
-			fmt.Println("5. Alternative: Use the web interface with 'plexichat-client web'")
+			if debug {
+				fmt.Printf("GUI panic recovered: %v\n", r)
+				fmt.Println("\nTROUBLESHOOTING TIPS:")
+				fmt.Println("1. Ensure CGO is enabled: set CGO_ENABLED=1")
+				fmt.Println("2. Install a C compiler (GCC/MinGW on Windows)")
+				fmt.Println("3. Try: go install fyne.io/fyne/v2/cmd/fyne@latest")
+				fmt.Println("4. For Windows: Install TDM-GCC or Visual Studio Build Tools")
+				fmt.Println("5. Alternative: Use the web interface with 'plexichat-client web'")
+			}
 		}
 	}()
 
-	fmt.Println("🚀 Initializing PlexiChat GUI...")
-	fmt.Println("📋 Checking GUI dependencies...")
-
-	// Test if Fyne can be imported properly
-	fmt.Println("✓ Fyne imports successful")
+	if debug {
+		fmt.Println("Initializing PlexiChat GUI...")
+		fmt.Println("Checking GUI dependencies...")
+		fmt.Println("Fyne imports successful")
+	}
 
 	// Create app with comprehensive error handling
-	fmt.Println("📱 Creating Fyne application...")
+	if debug {
+		fmt.Println("Creating Fyne application...")
+	}
 	myApp := app.NewWithID("com.plexichat.client")
 	if myApp == nil {
-		return fmt.Errorf("❌ Failed to create Fyne application - CGO may not be enabled")
+		return fmt.Errorf("Failed to create Fyne application - CGO may not be enabled")
 	}
-	fmt.Println("✓ Fyne application created successfully")
+	if debug {
+		fmt.Println("Fyne application created successfully")
+	}
 
 	// Set icon with fallback
 	myApp.SetIcon(theme.ComputerIcon())
@@ -141,8 +152,10 @@ func RunGUI() error {
 	// We'll handle theme switching in the UI instead
 
 	// Set up the main window with proper configuration
-	fmt.Println("Creating main window...")
-	mainWindow := myApp.NewWindow("🚀 PlexiChat Desktop - Modern Team Communication")
+	if debug {
+		fmt.Println("Creating main window...")
+	}
+	mainWindow := myApp.NewWindow("PlexiChat")
 
 	if mainWindow == nil {
 		return fmt.Errorf("failed to create main window")
@@ -374,100 +387,63 @@ func createLoginUI(state *GUIState) fyne.CanvasObject {
 }
 
 func createMainUI(state *GUIState) fyne.CanvasObject {
-	// Create modern sidebar with groups
-	groupsList := widget.NewList(
-		func() int {
-			state.mu.RLock()
-			defer state.mu.RUnlock()
-			return len(state.groups)
-		},
+	// Create simple Discord-style layout
+
+	// Left sidebar with channels
+	channelList := widget.NewList(
+		func() int { return 5 },
 		func() fyne.CanvasObject {
-			return widget.NewCard("", "", container.NewHBox(
-				widget.NewIcon(theme.FolderIcon()),
-				widget.NewLabelWithStyle("Group Name", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-				layout.NewSpacer(),
-				widget.NewLabelWithStyle("0", fyne.TextAlignTrailing, fyne.TextStyle{}),
-				widget.NewIcon(theme.AccountIcon()),
-			))
+			return widget.NewLabel("# channel")
 		},
-		func(i widget.ListItemID, o fyne.CanvasObject) {
-			state.mu.RLock()
-			defer state.mu.RUnlock()
-			if i < len(state.groups) {
-				card := o.(*widget.Card)
-				container := card.Content.(*fyne.Container)
-				container.Objects[1].(*widget.Label).SetText(state.groups[i].Name)
-				container.Objects[3].(*widget.Label).SetText(fmt.Sprintf("%d", len(state.groups[i].Members)))
+		func(id widget.ListItemID, obj fyne.CanvasObject) {
+			channels := []string{"# general", "# development", "# design", "# random", "# announcements"}
+			if id < len(channels) {
+				label := obj.(*widget.Label)
+				label.SetText(channels[id])
 			}
 		},
 	)
 
-	// Create search bar for messages
-	searchEntry := widget.NewEntry()
-	searchEntry.SetPlaceHolder("🔍 Search messages...")
-	searchBtn := widget.NewButton("Search", func() {
-		searchMessages(state, searchEntry.Text)
-	})
-	searchBar := container.NewBorder(nil, nil, nil, searchBtn, searchEntry)
+	// Make sidebar fixed width
+	channelList.Resize(fyne.NewSize(200, 0))
 
-	// Create modern chat area with rich text
-	chatArea := widget.NewRichText()
+	// Simple chat area to avoid layout issues
+	chatArea := widget.NewEntry()
+	chatArea.MultiLine = true
 	chatArea.Wrapping = fyne.TextWrapWord
-	welcomeText := &widget.TextSegment{
-		Text:  "🎉 Welcome to PlexiChat!\n\n💬 Select a group to start chatting\n🚀 Create new groups to organize conversations\n👥 Invite team members to collaborate\n\n✨ Enjoy real-time messaging!",
-		Style: widget.RichTextStyle{},
-	}
-	chatArea.Segments = []widget.RichTextSegment{welcomeText}
+	chatArea.SetText("Welcome to PlexiChat!\n\nThis is the main chat area.\nSelect a channel to start chatting.\n\nFeatures:\n- Real-time messaging\n- File sharing\n- Voice/video calls\n- Team collaboration")
+	chatArea.Disable() // Make it read-only for now
 
-	// Create modern message input with emoji support
+	// Message input area - Discord style
 	messageInput := widget.NewEntry()
-	messageInput.SetPlaceHolder("💬 Type your message here...")
+	messageInput.SetPlaceHolder("Message #general")
 	messageInput.MultiLine = false
 
-	// Add keyboard shortcuts
-	messageInput.OnSubmitted = func(text string) {
-		if text != "" {
-			sendMessage(state, text, "general") // Default to general channel
+	sendBtn := widget.NewButton("Send", func() {
+		if messageInput.Text != "" {
+			// Add the message to chat area
+			currentText := chatArea.Text
+			newMessage := fmt.Sprintf("\nYou - Today at %s\n%s",
+				time.Now().Format("3:04 PM"), messageInput.Text)
+			chatArea.SetText(currentText + newMessage)
 			messageInput.SetText("")
 		}
+	})
+
+	messageInput.OnSubmitted = func(text string) {
+		sendBtn.OnTapped()
 	}
 
-	// Create modern send button with icon
-	sendBtn := widget.NewButtonWithIcon("", theme.MailSendIcon(), func() {
-		if messageInput.Text != "" {
-			sendMessage(state, messageInput.Text, "general") // Default to general channel
-			messageInput.SetText("")
-		}
-	})
-	sendBtn.Importance = widget.HighImportance
+	// Simple message input area
+	messageContainer := container.NewBorder(nil, nil, nil, sendBtn, messageInput)
 
-	// Create additional action buttons
-	emojiBtn := widget.NewButtonWithIcon("😊", theme.ContentAddIcon(), func() {
-		showEmojiPicker(state, messageInput)
-	})
-
-	fileBtn := widget.NewButtonWithIcon("📎", theme.FolderOpenIcon(), func() {
-		showFileUploadDialog(state)
-	})
-
-	// Create modern message input area with toolbar
-	inputToolbar := container.NewHBox(emojiBtn, fileBtn, layout.NewSpacer(), sendBtn)
-	messageContainer := container.NewVBox(
-		messageInput,
-		inputToolbar,
-	)
-
-	// Create a scrollable container for the chat area
-	chatScroll := container.NewScroll(chatArea)
-	chatScroll.SetMinSize(fyne.NewSize(400, 300))
-
-	// Create chat container with search bar
+	// Create main chat container with simple layout
 	chatContainer := container.NewBorder(
-		searchBar,        // Top - search functionality
+		nil,              // Top
 		messageContainer, // Bottom
 		nil,              // Left
 		nil,              // Right
-		chatScroll,       // Center
+		chatArea,         // Center - no scroll for now to avoid issues
 	)
 
 	// Create modern sidebar with header
@@ -525,14 +501,14 @@ func createMainUI(state *GUIState) fyne.CanvasObject {
 	))
 
 	// Create groups header
-	groupsHeader := widget.NewCard("💬 Groups", "", container.NewVBox(
+	groupsHeader := widget.NewCard("Channels", "", container.NewVBox(
 		createGroupBtn,
 	))
 
 	sidebar := container.NewVBox(
 		userCard,
 		groupsHeader,
-		groupsList,
+		channelList,
 	)
 
 	// Create status bar

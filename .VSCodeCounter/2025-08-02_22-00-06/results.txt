@@ -1,0 +1,33 @@
+Date : 2025-08-02 22:00:06
+Directory : c:\Users\dboyn\plexichat\plexichat-client\cmd
+Total : 9 files,  2903 codes, 311 comments, 650 blanks, all 3864 lines
+
+Languages
++----------+------------+------------+------------+------------+------------+
+| language | files      | code       | comment    | blank      | total      |
++----------+------------+------------+------------+------------+------------+
+| Go       |          9 |      2,903 |        311 |        650 |      3,864 |
++----------+------------+------------+------------+------------+------------+
+
+Directories
++--------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                               | files      | code       | comment    | blank      | total      |
++--------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                  |          9 |      2,903 |        311 |        650 |      3,864 |
++--------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++--------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| filename                                                           | language | code       | comment    | blank      | total      |
++--------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| c:\Users\dboyn\plexichat\plexichat-client\cmd\admin.go             | Go       |        268 |          8 |         57 |        333 |
+| c:\Users\dboyn\plexichat\plexichat-client\cmd\auth.go              | Go       |        202 |         12 |         47 |        261 |
+| c:\Users\dboyn\plexichat\plexichat-client\cmd\chat.go              | Go       |        264 |         15 |         63 |        342 |
+| c:\Users\dboyn\plexichat\plexichat-client\cmd\config.go            | Go       |        308 |         20 |         68 |        396 |
+| c:\Users\dboyn\plexichat\plexichat-client\cmd\files.go             | Go       |        287 |         17 |         75 |        379 |
+| c:\Users\dboyn\plexichat\plexichat-client\cmd\gui_launcher.go      | Go       |      1,202 |        204 |        265 |      1,671 |
+| c:\Users\dboyn\plexichat\plexichat-client\cmd\gui_launcher_test.go | Go       |        187 |         13 |         35 |        235 |
+| c:\Users\dboyn\plexichat\plexichat-client\cmd\root.go              | Go       |        163 |         22 |         35 |        220 |
+| c:\Users\dboyn\plexichat\plexichat-client\cmd\web.go               | Go       |         22 |          0 |          5 |         27 |
+| Total                                                              |          |      2,903 |        311 |        650 |      3,864 |
++--------------------------------------------------------------------+----------+------------+------------+------------+------------+

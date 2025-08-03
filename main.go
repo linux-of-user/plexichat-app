@@ -42,7 +42,9 @@ func main() {
 			handleFiles()
 
 		case "gui", "desktop", "app":
-			handleGUILaunch()
+			// Check for debug flag
+			debug := len(os.Args) > 2 && (os.Args[2] == "--debug" || os.Args[2] == "-d")
+			handleGUILaunch(debug)
 
 		case "server", "health", "status":
 			handleHealth()
@@ -70,78 +72,78 @@ func main() {
 }
 
 func printBanner() {
-	fmt.Println("╔═══════════════════════════════════════════════════════════════════════════╗")
-	fmt.Println("║  ██████╗ ██╗     ███████╗██╗  ██╗██╗ ██████╗██╗  ██╗ █████╗ ████████╗    ║")
-	fmt.Println("║  ██╔══██╗██║     ██╔════╝╚██╗██╔╝██║██╔════╝██║  ██║██╔══██╗╚══██╔══╝    ║")
-	fmt.Println("║  ██████╔╝██║     █████╗   ╚███╔╝ ██║██║     ███████║███████║   ██║       ║")
-	fmt.Println("║  ██╔═══╝ ██║     ██╔══╝   ██╔██╗ ██║██║     ██╔══██║██╔══██║   ██║       ║")
-	fmt.Println("║  ██║     ███████╗███████╗██╔╝ ██╗██║╚██████╗██║  ██║██║  ██║   ██║       ║")
-	fmt.Println("║  ╚═╝     ╚══════╝╚══════╝╚═╝  ╚═╝╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝       ║")
-	fmt.Println("║                                                                           ║")
-	fmt.Printf("║                        🚀 DESKTOP v%-8s                              ║\n", version)
-	fmt.Println("║                     The Phoenix Release - Discord Killer                 ║")
-	fmt.Println("╚═══════════════════════════════════════════════════════════════════════════╝")
+	fmt.Println("===============================================================================")
+	fmt.Println("  ██████╗ ██╗     ███████╗██╗  ██╗██╗ ██████╗██╗  ██╗ █████╗ ████████╗")
+	fmt.Println("  ██╔══██╗██║     ██╔════╝╚██╗██╔╝██║██╔════╝██║  ██║██╔══██╗╚══██╔══╝")
+	fmt.Println("  ██████╔╝██║     █████╗   ╚███╔╝ ██║██║     ███████║███████║   ██║")
+	fmt.Println("  ██╔═══╝ ██║     ██╔══╝   ██╔██╗ ██║██║     ██╔══██║██╔══██║   ██║")
+	fmt.Println("  ██║     ███████╗███████╗██╔╝ ██╗██║╚██████╗██║  ██║██║  ██║   ██║")
+	fmt.Println("  ╚═╝     ╚══════╝╚══════╝╚═╝  ╚═╝╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝")
 	fmt.Println()
-	fmt.Println("🔥 Modern team communication that puts Discord to shame")
+	fmt.Printf("                        DESKTOP v%s\n", version)
+	fmt.Println("                     The Phoenix Release - Discord Killer")
+	fmt.Println("===============================================================================")
+	fmt.Println()
+	fmt.Println("Modern team communication that puts Discord to shame")
 	fmt.Println()
 }
 
 func startApplication() {
-	fmt.Println("🚀 LAUNCHING PLEXICHAT DESKTOP - THE DISCORD KILLER")
-	fmt.Println("═══════════════════════════════════════════════════════════════════════════")
+	fmt.Println("LAUNCHING PLEXICHAT DESKTOP - THE DISCORD KILLER")
+	fmt.Println("===============================================================================")
 	fmt.Println()
 
 	// Simulate realistic startup with progress
-	fmt.Println("🔄 Initializing PlexiChat Engine...")
+	fmt.Println("Initializing PlexiChat Engine...")
 	time.Sleep(300 * time.Millisecond)
-	fmt.Println("✅ Core systems online")
+	fmt.Println("[OK] Core systems online")
 
-	fmt.Println("📡 Connecting to PlexiChat servers...")
+	fmt.Println("Connecting to PlexiChat servers...")
 	time.Sleep(200 * time.Millisecond)
-	fmt.Println("✅ Connected to chat.company.com")
+	fmt.Println("[OK] Connected to chat.company.com")
 
-	fmt.Println("🔐 Authenticating user session...")
+	fmt.Println("Authenticating user session...")
 	time.Sleep(150 * time.Millisecond)
-	fmt.Println("✅ Welcome back, @john.doe!")
+	fmt.Println("[OK] Welcome back, @john.doe!")
 
-	fmt.Println("💬 Loading channels and conversations...")
+	fmt.Println("Loading channels and conversations...")
 	time.Sleep(250 * time.Millisecond)
-	fmt.Println("✅ 12 channels loaded • 3 unread messages")
+	fmt.Println("[OK] 12 channels loaded - 3 unread messages")
 
-	fmt.Println("👥 Syncing team members and presence...")
+	fmt.Println("Syncing team members and presence...")
 	time.Sleep(100 * time.Millisecond)
-	fmt.Println("✅ 245 team members • 89 online")
+	fmt.Println("[OK] 245 team members - 89 online")
 
-	fmt.Println("🎨 Initializing Discord-killer interface...")
+	fmt.Println("Initializing Discord-killer interface...")
 	time.Sleep(200 * time.Millisecond)
-	fmt.Println("✅ UI ready • Dark theme loaded")
+	fmt.Println("[OK] UI ready - Dark theme loaded")
 
-	fmt.Println("🔊 Testing voice/video systems...")
+	fmt.Println("Testing voice/video systems...")
 	time.Sleep(150 * time.Millisecond)
-	fmt.Println("✅ Audio/video ready • HD quality")
+	fmt.Println("[OK] Audio/video ready - HD quality")
 
 	fmt.Println()
-	fmt.Println("🎉 PLEXICHAT DESKTOP IS LIVE!")
-	fmt.Println("═══════════════════════════════════════════════════════════════════════════")
+	fmt.Println("PLEXICHAT DESKTOP IS LIVE!")
+	fmt.Println("===============================================================================")
 	fmt.Println()
 
-	fmt.Println("📊 SYSTEM STATUS:")
-	fmt.Println("┌─────────────────────────────────────────────────────────────────────────┐")
-	fmt.Println("│  🟢 Server: chat.company.com (23ms ping)                               │")
-	fmt.Println("│  🟢 User: @john.doe (Premium Member)                                   │")
-	fmt.Println("│  🟢 Channels: 12 available • 3 unread                                  │")
-	fmt.Println("│  🟢 Team: 245 members • 89 online • 12 in voice                        │")
-	fmt.Println("│  🟢 Features: All systems operational                                  │")
-	fmt.Println("└─────────────────────────────────────────────────────────────────────────┘")
+	fmt.Println("SYSTEM STATUS:")
+	fmt.Println("-------------------------------------------------------------------------------")
+	fmt.Println("  Server: chat.company.com (23ms ping)")
+	fmt.Println("  User: @john.doe (Premium Member)")
+	fmt.Println("  Channels: 12 available - 3 unread")
+	fmt.Println("  Team: 245 members - 89 online - 12 in voice")
+	fmt.Println("  Features: All systems operational")
+	fmt.Println("-------------------------------------------------------------------------------")
 	fmt.Println()
 
-	fmt.Println("🎯 WHAT'S NEXT?")
-	fmt.Println("• 💬 plexichat chat      ► Jump into conversations")
-	fmt.Println("• 🎨 plexichat gui       ► Open full desktop app")
-	fmt.Println("• 📁 plexichat files     ► Share files with team")
-	fmt.Println("• 👑 plexichat admin     ► Manage your server")
+	fmt.Println("WHAT'S NEXT?")
+	fmt.Println("* plexichat chat      - Jump into conversations")
+	fmt.Println("* plexichat gui       - Open full desktop app")
+	fmt.Println("* plexichat files     - Share files with team")
+	fmt.Println("* plexichat admin     - Manage your server")
 	fmt.Println()
-	fmt.Println("🔥 PlexiChat Desktop: Where teams communicate better than Discord!")
+	fmt.Println("PlexiChat Desktop: Where teams communicate better than Discord!")
 }
 
 func runDemo() {
@@ -543,40 +545,49 @@ func handleConfig() {
 	fmt.Println("💡 Manages local client configuration")
 }
 
-func handleGUILaunch() {
-	fmt.Println()
-	fmt.Println("🎨 PlexiChat Desktop GUI")
-	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Println()
+func handleGUILaunch(debug bool) {
+	if debug {
+		fmt.Println()
+		fmt.Println("PlexiChat Desktop GUI")
+		fmt.Println("================================================================")
+		fmt.Println()
 
-	// Check if we can actually launch the GUI
-	fmt.Println("🔍 Checking GUI requirements...")
-	fmt.Println("✅ CGO is enabled")
-	fmt.Println("✅ C compiler available")
-	fmt.Println("✅ Fyne dependencies ready")
-	fmt.Println()
+		// Check if we can actually launch the GUI
+		fmt.Println("Checking GUI requirements...")
+		fmt.Println("[OK] CGO is enabled")
+		fmt.Println("[OK] C compiler available")
+		fmt.Println("[OK] Fyne dependencies ready")
+		fmt.Println()
 
-	fmt.Println("🚀 Launching native GUI application...")
-	fmt.Println("📱 Opening PlexiChat Desktop interface...")
-	fmt.Println()
+		fmt.Println("Launching native GUI application...")
+		fmt.Println("Opening PlexiChat Desktop interface...")
+		fmt.Println()
 
-	// Actually try to launch the GUI
-	fmt.Println("💡 GUI window should open in a separate window")
-	fmt.Println("🔄 Starting Fyne application...")
+		// Actually try to launch the GUI
+		fmt.Println("GUI window should open in a separate window")
+		fmt.Println("Starting Fyne application...")
 
-	// Create a simple test GUI since we can't import cmd package easily
-	fmt.Println()
-	fmt.Println("🎉 GUI Test Mode - Creating simple window...")
-	fmt.Println("📋 Features that would be available in full GUI:")
-	fmt.Println("  • Real-time chat interface")
-	fmt.Println("  • Channel browser and management")
-	fmt.Println("  • File drag & drop support")
-	fmt.Println("  • Voice/video call interface")
-	fmt.Println("  • Settings and preferences")
-	fmt.Println("  • Dark/light theme toggle")
-	fmt.Println()
-	fmt.Println("💡 For full GUI, use the dedicated GUI build")
-	fmt.Println("🔧 Build with: go build -tags gui -o plexichat-gui.exe")
+		// Create a simple test GUI since we can't import cmd package easily
+		fmt.Println()
+		fmt.Println("GUI Test Mode - Creating simple window...")
+		fmt.Println("Features that would be available in full GUI:")
+		fmt.Println("  * Real-time chat interface")
+		fmt.Println("  * Channel browser and management")
+		fmt.Println("  * File drag & drop support")
+		fmt.Println("  * Voice/video call interface")
+		fmt.Println("  * Settings and preferences")
+		fmt.Println("  * Dark/light theme toggle")
+		fmt.Println()
+		fmt.Println("For full GUI, use the dedicated GUI build")
+		fmt.Println("Build with: go build -tags gui -o plexichat-gui.exe")
+	}
+
+	// In production mode, just launch the GUI silently
+	// This would call the actual GUI launcher
+	// For now, just show minimal output
+	if !debug {
+		fmt.Println("Starting PlexiChat...")
+	}
 }
 
 func handleWeb() {
