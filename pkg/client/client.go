@@ -24,6 +24,9 @@ type Client struct {
 	APIKey     string
 	Token      string
 	UserAgent  string
+	MaxRetries int
+	RetryDelay time.Duration
+	Debug      bool
 }
 
 // NewClient creates a new PlexiChat API client
@@ -33,7 +36,10 @@ func NewClient(baseURL string) *Client {
 		HTTPClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		UserAgent: "PlexiChat-Go-Client/1.0",
+		UserAgent:  "PlexiChat-Go-Client/1.0",
+		MaxRetries: 3,
+		RetryDelay: 1 * time.Second,
+		Debug:      false,
 	}
 }
 
@@ -47,36 +53,92 @@ func (c *Client) SetToken(token string) {
 	c.Token = token
 }
 
-// Request makes an HTTP request to the PlexiChat API
+// SetDebug enables or disables debug logging
+func (c *Client) SetDebug(debug bool) {
+	c.Debug = debug
+}
+
+// SetRetryConfig configures retry behavior
+func (c *Client) SetRetryConfig(maxRetries int, retryDelay time.Duration) {
+	c.MaxRetries = maxRetries
+	c.RetryDelay = retryDelay
+}
+
+// SetTimeout configures the HTTP client timeout
+func (c *Client) SetTimeout(timeout time.Duration) {
+	c.HTTPClient.Timeout = timeout
+}
+
+// Request makes an HTTP request to the PlexiChat API with retry logic
 func (c *Client) Request(ctx context.Context, method, endpoint string, body interface{}) (*http.Response, error) {
-	var reqBody io.Reader
+	var reqBodyBytes []byte
 
 	if body != nil {
-		jsonBody, err := json.Marshal(body)
+		var err error
+		reqBodyBytes, err = json.Marshal(body)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal request body: %w", err)
 		}
-		reqBody = bytes.NewBuffer(jsonBody)
 	}
 
 	url := c.BaseURL + endpoint
-	req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+
+	var lastErr error
+	for attempt := 0; attempt <= c.MaxRetries; attempt++ {
+		// Create new request for each attempt
+		var reqBody io.Reader
+		if reqBodyBytes != nil {
+			reqBody = bytes.NewBuffer(reqBodyBytes)
+		}
+
+		req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %w", err)
+		}
+
+		// Set headers
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("User-Agent", c.UserAgent)
+
+		// Set authentication
+		if c.Token != "" {
+			req.Header.Set("Authorization", "Bearer "+c.Token)
+		} else if c.APIKey != "" {
+			req.Header.Set("X-API-Key", c.APIKey)
+		}
+
+		if c.Debug {
+			fmt.Printf("[DEBUG] %s %s (attempt %d/%d)\n", method, url, attempt+1, c.MaxRetries+1)
+		}
+
+		resp, err := c.HTTPClient.Do(req)
+		if err != nil {
+			lastErr = err
+			if attempt < c.MaxRetries {
+				if c.Debug {
+					fmt.Printf("[DEBUG] Request failed, retrying in %v: %v\n", c.RetryDelay, err)
+				}
+				time.Sleep(c.RetryDelay)
+				continue
+			}
+			return nil, fmt.Errorf("request failed after %d attempts: %w", c.MaxRetries+1, err)
+		}
+
+		// Check if we should retry based on status code
+		if resp.StatusCode >= 500 && attempt < c.MaxRetries {
+			resp.Body.Close()
+			lastErr = fmt.Errorf("server error: %d", resp.StatusCode)
+			if c.Debug {
+				fmt.Printf("[DEBUG] Server error %d, retrying in %v\n", resp.StatusCode, c.RetryDelay)
+			}
+			time.Sleep(c.RetryDelay)
+			continue
+		}
+
+		return resp, nil
 	}
 
-	// Set headers
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", c.UserAgent)
-
-	// Set authentication
-	if c.Token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.Token)
-	} else if c.APIKey != "" {
-		req.Header.Set("X-API-Key", c.APIKey)
-	}
-
-	return c.HTTPClient.Do(req)
+	return nil, lastErr
 }
 
 // Get makes a GET request
@@ -411,10 +473,10 @@ func (c *Client) Disable2FA(ctx context.Context, method, code string) (*TwoFADis
 // Register creates a new user account
 func (c *Client) Register(ctx context.Context, username, email, password, userType string) (*RegisterResponse, error) {
 	registerReq := &RegisterRequest{
-		Username: username,
-		Email:    email,
-		Password: password,
-		UserType: userType,
+		Username:      username,
+		Email:         email,
+		Password:      password,
+		UserType:      userType,
 		TermsAccepted: true,
 	}
 
@@ -443,7 +505,7 @@ func (c *Client) GetCurrentUser(ctx context.Context) (*UserResponse, error) {
 // SendMessage sends a message to a chat room
 func (c *Client) SendMessage(ctx context.Context, content string, recipientID string) (*Message, error) {
 	sendReq := &SendMessageRequest{
-		Content: content,
+		Content:     content,
 		RecipientID: recipientID,
 	}
 

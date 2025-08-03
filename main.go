@@ -226,7 +226,7 @@ func showVersion() {
 	fmt.Printf("Build Time: %s\n", buildTime)
 	fmt.Printf("Go Version: %s\n", runtime.Version())
 	fmt.Printf("Platform: %s/%s\n", runtime.GOOS, runtime.GOARCH)
-	fmt.Println("\n✅ Application is working correctly!")
+	fmt.Println("\n[OK] Application is working correctly!")
 }
 
 func showWelcome() {
@@ -497,20 +497,6 @@ func handleFiles() {
 	fmt.Println("  delete   - Delete a file")
 	fmt.Println("\nExample: plexichat files upload --file document.pdf --room general")
 	fmt.Println("💡 This would handle real file operations via PlexiChat API")
-}
-
-func handleGUI() {
-	fmt.Println("\n🎨 GUI Interface")
-	fmt.Println("================")
-	fmt.Println("Checking GUI availability...")
-	fmt.Println("❌ Native GUI requires CGO and C compiler")
-	fmt.Println("\n🔧 To enable GUI:")
-	fmt.Println("1. Install a C compiler (GCC/MinGW/MSVC)")
-	fmt.Println("2. Set CGO_ENABLED=1")
-	fmt.Println("3. Rebuild with: go build -tags gui")
-	fmt.Println("\n🌐 Alternative: Use web interface")
-	fmt.Println("  plexichat web")
-	fmt.Println("\n💡 See SETUP-GUIDE.md for detailed GUI setup instructions")
 }
 
 func handleHealth() {
