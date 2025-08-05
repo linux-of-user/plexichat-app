@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"plexichat-client/pkg/errors"
 	"plexichat-client/pkg/logging"
 
 	"github.com/gorilla/websocket"
@@ -127,7 +128,7 @@ func (c *Client) Request(ctx context.Context, method, endpoint string, body inte
 		var err error
 		reqBodyBytes, err = json.Marshal(body)
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal request body: %w", err)
+			return nil, errors.NewValidationError("MARSHAL_ERROR", "Failed to marshal request body").WithContext("error", err.Error())
 		}
 	}
 
@@ -148,7 +149,7 @@ func (c *Client) Request(ctx context.Context, method, endpoint string, body inte
 
 		req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create request: %w", err)
+			return nil, errors.NewNetworkError("REQUEST_CREATE_ERROR", "Failed to create HTTP request").WithContext("error", err.Error())
 		}
 
 		// Set headers
@@ -177,7 +178,7 @@ func (c *Client) Request(ctx context.Context, method, endpoint string, body inte
 				time.Sleep(retryDelay)
 				continue
 			}
-			return nil, fmt.Errorf("request failed after %d attempts: %w", c.MaxRetries+1, err)
+			return nil, errors.FromError(err).WithContext("attempts", maxRetries+1).WithContext("url", url)
 		}
 
 		// Check if we should retry based on status code
