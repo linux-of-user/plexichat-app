@@ -133,7 +133,7 @@ func runListen(cmd *cobra.Command, args []string) error {
 	// Determine WebSocket endpoint
 	endpoint := "/ws/chat"
 	if !listenAll {
-		endpoint = fmt.Sprintf("/ws/chat/room/%d", recipientID)
+		endpoint = fmt.Sprintf("/ws/chat/room/%s", recipientID)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -154,7 +154,7 @@ func runListen(cmd *cobra.Command, args []string) error {
 	if listenAll {
 		fmt.Println("Listening to all rooms... (Press Ctrl+C to exit)")
 	} else {
-		fmt.Printf("Listening to room %d... (Press Ctrl+C to exit)\n", recipientID)
+		fmt.Printf("Listening to room %s... (Press Ctrl+C to exit)\n", recipientID)
 	}
 	fmt.Println(strings.Repeat("-", 50))
 
@@ -229,7 +229,7 @@ func runHistory(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	endpoint := fmt.Sprintf("/api/v1/messages?room_id=%d&limit=%d&page=%d", recipientID, limit, page)
+	endpoint := fmt.Sprintf("/api/v1/messages?room_id=%s&limit=%d&page=%d", recipientID, limit, page)
 	resp, err := c.Get(ctx, endpoint)
 	if err != nil {
 		return fmt.Errorf("failed to get message history: %w", err)
@@ -269,7 +269,7 @@ func runHistory(cmd *cobra.Command, args []string) error {
 		})
 	}
 
-	fmt.Printf("Message History - Room %d (Page %d of %d)\n", recipientID, page, listResp.TotalPages)
+	fmt.Printf("Message History - Room %s (Page %d of %d)\n", recipientID, page, listResp.TotalPages)
 	table.Render()
 	fmt.Printf("Total messages: %d\n", listResp.Total)
 

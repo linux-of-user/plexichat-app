@@ -144,7 +144,7 @@ func (jm *JWTManager) RefreshToken(refreshTokenString string) (string, error) {
 	}
 
 	// Verify audience
-	if !claims.VerifyAudience("plexichat-refresh", true) {
+	if len(claims.Audience) == 0 || claims.Audience[0] != "plexichat-refresh" {
 		return "", errors.New("invalid refresh token audience")
 	}
 
@@ -237,7 +237,7 @@ func RequirePermission(permission string) func(http.Handler) http.Handler {
 			}
 
 			if !hasPermission {
-				LogSecurityEvent("PERMISSION_DENIED", GetClientIP(r), r.UserAgent(), 
+				LogSecurityEvent("PERMISSION_DENIED", GetClientIP(r), r.UserAgent(),
 					fmt.Sprintf("User %s lacks permission: %s", claims.Username, permission))
 				http.Error(w, "Insufficient permissions", http.StatusForbidden)
 				return
@@ -268,7 +268,7 @@ func RequireRole(role string) func(http.Handler) http.Handler {
 			}
 
 			if !hasRole {
-				LogSecurityEvent("ROLE_DENIED", GetClientIP(r), r.UserAgent(), 
+				LogSecurityEvent("ROLE_DENIED", GetClientIP(r), r.UserAgent(),
 					fmt.Sprintf("User %s lacks role: %s", claims.Username, role))
 				http.Error(w, "Insufficient role", http.StatusForbidden)
 				return

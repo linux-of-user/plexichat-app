@@ -81,21 +81,23 @@ func (v *Validator) ValidateEmail(field, email string) {
 		return // Use ValidateRequired separately if needed
 	}
 
+	// Length check first
+	if len(email) > 254 {
+		v.AddError(field, "Email address too long", "EMAIL_TOO_LONG")
+		return
+	}
+
+	// Check for dangerous characters before format check
+	if containsDangerousChars(email) {
+		v.AddError(field, "Email contains invalid characters", "INVALID_CHARACTERS")
+		return
+	}
+
 	// Basic format check
 	_, err := mail.ParseAddress(email)
 	if err != nil {
 		v.AddError(field, "Invalid email format", "INVALID_EMAIL")
 		return
-	}
-
-	// Additional checks
-	if len(email) > 254 {
-		v.AddError(field, "Email address too long", "EMAIL_TOO_LONG")
-	}
-
-	// Check for dangerous characters
-	if containsDangerousChars(email) {
-		v.AddError(field, "Email contains invalid characters", "INVALID_CHARACTERS")
 	}
 }
 
@@ -175,6 +177,7 @@ func (v *Validator) ValidatePassword(field, password string) {
 	commonPasswords := []string{
 		"password", "123456", "123456789", "qwerty", "abc123", "password123",
 		"admin", "letmein", "welcome", "monkey", "dragon", "master",
+		"password123!", "Password123!", "password1", "Password1",
 	}
 	for _, common := range commonPasswords {
 		if strings.ToLower(password) == common {
@@ -273,7 +276,7 @@ func (v *Validator) ValidateMessageContent(field, content string) {
 
 	// Check for dangerous content
 	v.ValidateNoHTML(field, content)
-	
+
 	// Allow some basic formatting but prevent XSS
 	if containsXSSPatterns(content) {
 		v.AddError(field, "Message contains potentially dangerous content", "XSS_DETECTED")

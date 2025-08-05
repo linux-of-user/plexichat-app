@@ -2,12 +2,12 @@ package websocket
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"sync"
 	"time"
+
+	"plexichat-client/pkg/logging"
 
 	"github.com/gorilla/websocket"
 )
@@ -78,7 +78,7 @@ func (h *Hub) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("WebSocket hub shutting down")
+			logging.Info("WebSocket hub shutting down")
 			return
 
 		case client := <-h.register:
@@ -102,7 +102,7 @@ func (h *Hub) registerClient(client *Client) {
 	defer h.mu.Unlock()
 
 	h.clients[client.ID] = client
-	log.Printf("Client %s (%s) connected", client.ID, client.Username)
+	logging.Info("Client %s (%s) connected", client.ID, client.Username)
 
 	// Send welcome message
 	welcomeMsg := Message{
@@ -110,7 +110,7 @@ func (h *Hub) registerClient(client *Client) {
 		Data:      map[string]string{"message": "Connected to PlexiChat"},
 		Timestamp: time.Now(),
 	}
-	
+
 	select {
 	case client.Send <- welcomeMsg:
 	default:
@@ -137,7 +137,7 @@ func (h *Hub) unregisterClient(client *Client) {
 
 		delete(h.clients, client.ID)
 		close(client.Send)
-		log.Printf("Client %s (%s) disconnected", client.ID, client.Username)
+		logging.Info("Client %s (%s) disconnected", client.ID, client.Username)
 
 		// Broadcast leave message to channels
 		for channelID := range client.Channels {
@@ -245,7 +245,7 @@ func (h *Hub) JoinChannel(clientID, channelID string) error {
 	}
 	h.broadcastToChannel(channelID, joinMsg)
 
-	log.Printf("Client %s joined channel %s", clientID, channelID)
+	logging.Info("Client %s joined channel %s", clientID, channelID)
 	return nil
 }
 
@@ -282,7 +282,7 @@ func (h *Hub) LeaveChannel(clientID, channelID string) error {
 	}
 	h.broadcastToChannel(channelID, leaveMsg)
 
-	log.Printf("Client %s left channel %s", clientID, channelID)
+	logging.Info("Client %s left channel %s", clientID, channelID)
 	return nil
 }
 
@@ -341,9 +341,9 @@ func (h *Hub) GetStats() map[string]interface{} {
 	defer h.mu.RUnlock()
 
 	return map[string]interface{}{
-		"total_clients":    len(h.clients),
-		"total_channels":   len(h.channels),
-		"timestamp":        time.Now(),
+		"total_clients":  len(h.clients),
+		"total_channels": len(h.channels),
+		"timestamp":      time.Now(),
 	}
 }
 
@@ -361,7 +361,7 @@ var Upgrader = websocket.Upgrader{
 func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request, userID, username string) {
 	conn, err := Upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Printf("WebSocket upgrade failed: %v", err)
+		logging.Error("WebSocket upgrade failed: %v", err)
 		return
 	}
 
@@ -401,7 +401,7 @@ func (c *Client) writePump() {
 			}
 
 			if err := c.Conn.WriteJSON(message); err != nil {
-				log.Printf("WebSocket write error: %v", err)
+				logging.Error("WebSocket write error: %v", err)
 				return
 			}
 
@@ -433,7 +433,7 @@ func (c *Client) readPump() {
 		err := c.Conn.ReadJSON(&message)
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("WebSocket error: %v", err)
+				logging.Error("WebSocket error: %v", err)
 			}
 			break
 		}

@@ -1,7 +1,6 @@
 package security
 
 import (
-	"context"
 	"crypto/subtle"
 	"fmt"
 	"net/http"
@@ -27,11 +26,11 @@ type SecurityConfig struct {
 // DefaultSecurityConfig returns secure default configuration
 func DefaultSecurityConfig() *SecurityConfig {
 	return &SecurityConfig{
-		RateLimitRequests: 100,        // 100 requests per minute
-		RateLimitBurst:    10,         // Allow burst of 10
+		RateLimitRequests: 100, // 100 requests per minute
+		RateLimitBurst:    10,  // Allow burst of 10
 		APIKeyHeader:      "X-API-Key",
 		RequireHTTPS:      true,
-		MaxRequestSize:    10 << 20,   // 10MB max request
+		MaxRequestSize:    10 << 20, // 10MB max request
 		AllowedOrigins:    []string{"https://app.plexichat.com"},
 		SessionTimeout:    24 * time.Hour,
 	}
@@ -127,7 +126,7 @@ func (sm *SecurityMiddleware) SecurityHeadersMiddleware(next http.Handler) http.
 		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("X-XSS-Protection", "1; mode=block")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-		
+
 		if sm.config.RequireHTTPS {
 			w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
 		}
@@ -157,7 +156,7 @@ func (sm *SecurityMiddleware) HTTPSRedirectMiddleware(next http.Handler) http.Ha
 func (sm *SecurityMiddleware) CORSMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
-		
+
 		// Check if origin is allowed
 		allowed := false
 		for _, allowedOrigin := range sm.config.AllowedOrigins {
@@ -235,7 +234,7 @@ func SanitizeInput(input string) string {
 	// Remove null bytes and control characters
 	sanitized := strings.ReplaceAll(input, "\x00", "")
 	sanitized = strings.ReplaceAll(sanitized, "\r", "")
-	
+
 	// Limit length to prevent DoS
 	if len(sanitized) > 10000 {
 		sanitized = sanitized[:10000]
@@ -247,6 +246,6 @@ func SanitizeInput(input string) string {
 // LogSecurityEvent logs security-related events
 func LogSecurityEvent(eventType, clientIP, userAgent, details string) {
 	timestamp := time.Now().UTC().Format(time.RFC3339)
-	fmt.Printf("[SECURITY] %s | %s | IP: %s | UA: %s | %s\n", 
+	fmt.Printf("[SECURITY] %s | %s | IP: %s | UA: %s | %s\n",
 		timestamp, eventType, clientIP, userAgent, details)
 }

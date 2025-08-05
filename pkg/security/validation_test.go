@@ -41,7 +41,7 @@ func TestValidator_ValidateEmail(t *testing.T) {
 		},
 		{
 			name:    "email too long",
-			email:   "verylongusernamethatexceedsthelimitverylongusernamethatexceedsthelimitverylongusernamethatexceedsthelimitverylongusernamethatexceedsthelimitverylongusernamethatexceedsthelimitverylongusernamethatexceedsthelimit@example.com",
+			email:   "verylongusernamethatexceedsthelimitverylongusernamethatexceedsthelimitverylongusernamethatexceedsthelimitverylongusernamethatexceedsthelimitverylongusernamethatexceedsthelimitverylongusernamethatexceedsthelimitverylongusernamethatexceedsthelimitverylongusernamethatexceedsthelimitverylongusernamethatexceedsthelimitverylongusernamethatexceedsthelimit@example.com",
 			wantErr: true,
 			errCode: "EMAIL_TOO_LONG",
 		},
@@ -410,11 +410,11 @@ func TestValidator_ValidateFileUpload(t *testing.T) {
 			wantErr:      false,
 		},
 		{
-			name:    "file too large",
+			name:     "file too large",
 			filename: "large.pdf",
-			size:    20 << 20, // 20MB
-			wantErr: true,
-			errCode: "FILE_TOO_LARGE",
+			size:     20 << 20, // 20MB
+			wantErr:  true,
+			errCode:  "FILE_TOO_LARGE",
 		},
 		{
 			name:         "invalid file type",

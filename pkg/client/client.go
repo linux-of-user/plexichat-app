@@ -14,19 +14,63 @@ import (
 	"strings"
 	"time"
 
+	"plexichat-client/pkg/logging"
+
 	"github.com/gorilla/websocket"
 )
 
+// RetryConfig holds retry configuration
+type RetryConfig struct {
+	MaxRetries    int
+	Delay         time.Duration
+	BackoffFactor float64 // Exponential backoff multiplier
+	MaxDelay      time.Duration
+}
+
+// DefaultRetryConfig returns a default retry configuration
+func DefaultRetryConfig() RetryConfig {
+	return RetryConfig{
+		MaxRetries:    3,
+		Delay:         time.Second,
+		BackoffFactor: 2.0,
+		MaxDelay:      30 * time.Second,
+	}
+}
+
+// calculateRetryDelay calculates the delay for a retry attempt using exponential backoff
+func (c *Client) calculateRetryDelay(attempt int) time.Duration {
+	config := c.RetryConfig
+	if config.Delay == 0 {
+		config.Delay = c.RetryDelay // Fallback to old field
+	}
+
+	delay := config.Delay
+	if config.BackoffFactor > 1.0 && attempt > 0 {
+		// Apply exponential backoff
+		for i := 0; i < attempt; i++ {
+			delay = time.Duration(float64(delay) * config.BackoffFactor)
+		}
+	}
+
+	// Cap at maximum delay
+	if config.MaxDelay > 0 && delay > config.MaxDelay {
+		delay = config.MaxDelay
+	}
+
+	return delay
+}
+
 // Client represents the PlexiChat API client with 2FA/MFA support.
 type Client struct {
-	BaseURL    string
-	HTTPClient *http.Client
-	APIKey     string
-	Token      string
-	UserAgent  string
-	MaxRetries int
-	RetryDelay time.Duration
-	Debug      bool
+	BaseURL     string
+	HTTPClient  *http.Client
+	APIKey      string
+	Token       string
+	UserAgent   string
+	MaxRetries  int
+	RetryDelay  time.Duration
+	RetryConfig RetryConfig
+	Debug       bool
 }
 
 // NewClient creates a new PlexiChat API client
@@ -36,10 +80,11 @@ func NewClient(baseURL string) *Client {
 		HTTPClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		UserAgent:  "PlexiChat-Go-Client/1.0",
-		MaxRetries: 3,
-		RetryDelay: 1 * time.Second,
-		Debug:      false,
+		UserAgent:   "PlexiChat-Go-Client/1.0",
+		MaxRetries:  3,
+		RetryDelay:  1 * time.Second,
+		RetryConfig: DefaultRetryConfig(),
+		Debug:       false,
 	}
 }
 
@@ -58,10 +103,15 @@ func (c *Client) SetDebug(debug bool) {
 	c.Debug = debug
 }
 
-// SetRetryConfig configures retry behavior
+// SetRetryConfig configures retry behavior (legacy method)
 func (c *Client) SetRetryConfig(maxRetries int, retryDelay time.Duration) {
 	c.MaxRetries = maxRetries
 	c.RetryDelay = retryDelay
+}
+
+// SetAdvancedRetryConfig configures advanced retry behavior with exponential backoff
+func (c *Client) SetAdvancedRetryConfig(config RetryConfig) {
+	c.RetryConfig = config
 }
 
 // SetTimeout configures the HTTP client timeout
@@ -84,7 +134,12 @@ func (c *Client) Request(ctx context.Context, method, endpoint string, body inte
 	url := c.BaseURL + endpoint
 
 	var lastErr error
-	for attempt := 0; attempt <= c.MaxRetries; attempt++ {
+	maxRetries := c.RetryConfig.MaxRetries
+	if maxRetries == 0 {
+		maxRetries = c.MaxRetries // Fallback to old field
+	}
+
+	for attempt := 0; attempt <= maxRetries; attempt++ {
 		// Create new request for each attempt
 		var reqBody io.Reader
 		if reqBodyBytes != nil {
@@ -108,17 +163,18 @@ func (c *Client) Request(ctx context.Context, method, endpoint string, body inte
 		}
 
 		if c.Debug {
-			fmt.Printf("[DEBUG] %s %s (attempt %d/%d)\n", method, url, attempt+1, c.MaxRetries+1)
+			logging.Debug("%s %s (attempt %d/%d)", method, url, attempt+1, c.MaxRetries+1)
 		}
 
 		resp, err := c.HTTPClient.Do(req)
 		if err != nil {
 			lastErr = err
-			if attempt < c.MaxRetries {
+			if attempt < maxRetries {
+				retryDelay := c.calculateRetryDelay(attempt)
 				if c.Debug {
-					fmt.Printf("[DEBUG] Request failed, retrying in %v: %v\n", c.RetryDelay, err)
+					logging.Debug("Request failed, retrying in %v: %v", retryDelay, err)
 				}
-				time.Sleep(c.RetryDelay)
+				time.Sleep(retryDelay)
 				continue
 			}
 			return nil, fmt.Errorf("request failed after %d attempts: %w", c.MaxRetries+1, err)
@@ -128,10 +184,11 @@ func (c *Client) Request(ctx context.Context, method, endpoint string, body inte
 		if resp.StatusCode >= 500 && attempt < c.MaxRetries {
 			resp.Body.Close()
 			lastErr = fmt.Errorf("server error: %d", resp.StatusCode)
+			retryDelay := c.calculateRetryDelay(attempt)
 			if c.Debug {
-				fmt.Printf("[DEBUG] Server error %d, retrying in %v\n", resp.StatusCode, c.RetryDelay)
+				logging.Debug("Server error %d, retrying in %v", resp.StatusCode, retryDelay)
 			}
-			time.Sleep(c.RetryDelay)
+			time.Sleep(retryDelay)
 			continue
 		}
 
@@ -500,6 +557,61 @@ func (c *Client) GetCurrentUser(ctx context.Context) (*UserResponse, error) {
 	var userResp UserResponse
 	err = c.ParseResponse(resp, &userResp)
 	return &userResp, err
+}
+
+// GetUsers retrieves a list of users with pagination
+func (c *Client) GetUsers(ctx context.Context, limit, offset int) (*UserListResponse, error) {
+	endpoint := fmt.Sprintf("/api/v1/users?limit=%d&offset=%d", limit, offset)
+	resp, err := c.Get(ctx, endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	var listResp UserListResponse
+	err = c.ParseResponse(resp, &listResp)
+	return &listResp, err
+}
+
+// GetUser gets information about a specific user by ID
+func (c *Client) GetUser(ctx context.Context, userID string) (*UserResponse, error) {
+	resp, err := c.Get(ctx, fmt.Sprintf("/api/v1/users/%s", userID))
+	if err != nil {
+		return nil, err
+	}
+
+	var userResp UserResponse
+	err = c.ParseResponse(resp, &userResp)
+	return &userResp, err
+}
+
+// UpdateProfile updates the current user's profile
+func (c *Client) UpdateProfile(ctx context.Context, displayName, email string) (*UserResponse, error) {
+	updateReq := map[string]interface{}{
+		"display_name": displayName,
+		"email":        email,
+	}
+
+	resp, err := c.Put(ctx, "/api/v1/users/me", updateReq)
+	if err != nil {
+		return nil, err
+	}
+
+	var userResp UserResponse
+	err = c.ParseResponse(resp, &userResp)
+	return &userResp, err
+}
+
+// SearchUsers searches for users by username or email
+func (c *Client) SearchUsers(ctx context.Context, query string, limit int) (*UserListResponse, error) {
+	endpoint := fmt.Sprintf("/api/v1/users/search?q=%s&limit=%d", query, limit)
+	resp, err := c.Get(ctx, endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	var listResp UserListResponse
+	err = c.ParseResponse(resp, &listResp)
+	return &listResp, err
 }
 
 // SendMessage sends a message to a chat room

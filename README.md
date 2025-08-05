@@ -1,14 +1,47 @@
 # 🚀 PlexiChat Desktop Client
 
-A **beautiful, modern desktop application** for PlexiChat with native GUI, real-time messaging, and comprehensive API integration.
+A **professional, feature-rich desktop client** for the PlexiChat messaging platform with modern CLI and GUI interfaces, real-time messaging, and comprehensive configuration management.
 
-![PlexiChat Desktop](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
-![Version](https://img.shields.io/badge/Version-2.0.0--alpha-orange)
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
+![Go Version](https://img.shields.io/badge/Go-1.19+-00ADD8)
 ![License](https://img.shields.io/badge/License-MIT-green)
+![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
 
-## ✨ Features
+## 📱 Applications
 
-### 🎨 **Beautiful Native GUI**
+- **`plexichat-cli.exe`** - Full-featured command-line interface
+- **`plexichat-gui.exe`** - Modern Discord-like graphical interface
+
+## ✨ Key Features
+
+### 🖥️ **Dual Interface**
+- **CLI Application**: Interactive commands, configuration management, real-time chat
+- **GUI Application**: Modern Discord-like interface with professional design
+
+### 💬 **Real-time Communication**
+- **WebSocket messaging** with automatic reconnection
+- **Live message delivery** and typing indicators
+- **Channel management** and user presence tracking
+
+### 🔧 **Advanced Configuration**
+- **YAML/JSON configuration** files with validation
+- **Environment variable** overrides (`PLEXICHAT_*`)
+- **Command-line flags** for all settings
+- **Configuration management** commands (init, show, set, validate)
+
+### 🔒 **Security & Validation**
+- **Input validation** with XSS protection
+- **Password strength** validation with common password detection
+- **File upload security** with type and size validation
+- **Secure authentication** with JWT token support
+
+### 📝 **Professional Logging**
+- **ASCII-only output** with configurable colorization
+- **Multiple log levels** (DEBUG, INFO, WARN, ERROR, FATAL)
+- **Custom logger instances** with prefixes and formatting
+- **Error handling** and recovery mechanisms
+
+### GUI Features
 - **Modern Fyne-based interface** with professional design
 - **Dark/Light theme support** with user preferences
 - **User avatars** with automatic generation and color coding
@@ -16,41 +49,50 @@ A **beautiful, modern desktop application** for PlexiChat with native GUI, real-
 - **File drag & drop** support with upload confirmation
 - **Real-time notifications** with desktop integration
 
-### 🔐 **Complete Authentication**
-- **Real API integration** with PlexiChat server
+### CLI Features
+- **Interactive chat mode** with real-time messaging
+- **Channel management** (list, join, leave, create)
+- **User management** and authentication
+- **Configuration management** with YAML support
+- **Comprehensive help system** and command completion
+
+### Security Features
 - **2FA/MFA support** (TOTP, SMS, Email, Hardware keys)
-- **Session management** with auto-login and token persistence
-- **Secure logout** with complete session cleanup
-- **User registration** with validation and confirmation
-
-### 💬 **Real-Time Communication**
-- **Live message sending** via PlexiChat API
-- **Message history** with timestamps and user avatars
-- **Group management** with creation and member handling
-- **Typing indicators** and message status
-- **File sharing** with drag & drop support
-
-### ⚙️ **Advanced Features**
-- **Comprehensive settings** panel with preferences
-- **Keyboard shortcuts** for power users (F1 help, F11 fullscreen)
-- **Error handling** with smart retry logic and user-friendly messages
-- **Status monitoring** with connection indicators
-- **Cross-platform** builds for Windows, macOS, and Linux
+- **Input validation** with XSS protection
+- **Secure authentication** with token management
+- **Password strength validation**
+- **File upload security** with type and size validation
 
 ## 🚀 Quick Start
 
-### Download & Run
-1. Download the latest release from [Releases](https://github.com/yourusername/plexichat-desktop/releases)
-2. Extract the archive
-3. Run `PlexiChat-GUI.exe` (Windows) or equivalent for your platform
-4. Enter your PlexiChat server details and login!
+### 📦 Download & Run
+1. **Download** the latest release from [Releases](https://github.com/yourusername/plexichat-client/releases)
+2. **Extract** the archive
+3. **Run** the application:
+   ```bash
+   # CLI Application
+   ./plexichat-cli.exe config init
+   ./plexichat-cli.exe config set url "http://localhost:8000"
+   ./plexichat-cli.exe chat
 
-### From Source
+   # GUI Application
+   ./plexichat-gui.exe
+   ```
+
+### 🛠️ Build from Source
+**Prerequisites:** Go 1.19+, CGO enabled (for GUI)
+
 ```bash
-git clone https://github.com/yourusername/plexichat-desktop
-cd plexichat-desktop
-go build -o PlexiChat-CLI.exe .
-./PlexiChat-CLI.exe gui
+# Clone repository
+git clone https://github.com/yourusername/plexichat-client.git
+cd plexichat-client
+
+# Build CLI
+go build -o plexichat-cli.exe plexichat-cli.go
+
+# Build GUI (requires CGO)
+set CGO_ENABLED=1
+go build -o plexichat-gui.exe plexichat-gui.go
 ```
 
 ## 🎯 Usage
