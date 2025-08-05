@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"runtime"
+	"path/filepath"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -64,7 +64,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	// Global flags
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.plexichat-client.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.plexichat-app/config.yaml)")
 	rootCmd.PersistentFlags().StringVar(&baseURL, "url", "http://localhost:8000", "PlexiChat server URL")
 	rootCmd.PersistentFlags().StringVar(&apiKey, "api-key", "", "API key for authentication")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
@@ -75,7 +75,6 @@ func init() {
 	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
 
 	// Add built-in subcommands (others are registered in their respective files)
-	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(healthCmd)
 	rootCmd.AddCommand(guiCmd)
 }
@@ -90,11 +89,13 @@ func initConfig() {
 		home, err := os.UserHomeDir()
 		cobra.CheckErr(err)
 
-		// Search config in home directory with name ".plexichat-client" (without extension).
-		viper.AddConfigPath(home)
+		// Search config in home directory with name "config" in .plexichat-app folder
+		configDir := filepath.Join(home, ".plexichat-app")
+		os.MkdirAll(configDir, 0755)
+		viper.AddConfigPath(configDir)
 		viper.AddConfigPath(".")
 		viper.SetConfigType("yaml")
-		viper.SetConfigName(".plexichat-client")
+		viper.SetConfigName("config")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
@@ -119,24 +120,6 @@ func SetVersionInfo(version, commit, buildTime, goVersion string) {
 	clientCommit = commit
 	clientBuildTime = buildTime
 	clientGoVersion = goVersion
-}
-
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Show version information",
-	Long:  "Display version information for the client",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Printf("PlexiChat Desktop v%s\n", clientVersion)
-		fmt.Printf("Commit: %s\n", clientCommit)
-		fmt.Printf("Build Time: %s\n", clientBuildTime)
-		fmt.Printf("Go Version: %s\n", clientGoVersion)
-		fmt.Printf("Platform: %s/%s\n", runtime.GOOS, runtime.GOARCH)
-
-		// Don't try to connect to server by default - this was causing hangs
-		fmt.Println("\nUse 'plexichat health' to check server connectivity")
-
-		return nil
-	},
 }
 
 var guiCmd = &cobra.Command{

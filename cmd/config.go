@@ -102,7 +102,7 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 
 	// Get all settings
 	settings := viper.AllSettings()
-	
+
 	for key, value := range settings {
 		// Hide sensitive values unless --secrets flag is used
 		if !showSecrets && isSensitiveKey(key) {
@@ -128,7 +128,7 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 
 	// Convert string values to appropriate types
 	var finalValue interface{} = value
-	
+
 	// Try to parse as boolean
 	if strings.ToLower(value) == "true" {
 		finalValue = true
@@ -145,7 +145,9 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to get home directory: %w", err)
 		}
-		configFile = filepath.Join(home, ".plexichat-client.yaml")
+		configDir := filepath.Join(home, ".plexichat-app")
+		os.MkdirAll(configDir, 0755)
+		configFile = filepath.Join(configDir, "config.yaml")
 	}
 
 	err := viper.WriteConfigAs(configFile)
@@ -184,7 +186,9 @@ func runConfigInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	configFile := filepath.Join(home, ".plexichat-client.yaml")
+	configDir := filepath.Join(home, ".plexichat-app")
+	os.MkdirAll(configDir, 0755)
+	configFile := filepath.Join(configDir, "config.yaml")
 
 	// Check if file exists
 	if _, err := os.Stat(configFile); err == nil && !force {
@@ -193,18 +197,18 @@ func runConfigInit(cmd *cobra.Command, args []string) error {
 
 	// Create default configuration
 	defaultConfig := map[string]interface{}{
-		"url":                "http://localhost:8000",
-		"timeout":            "30s",
-		"retries":            3,
+		"url":                 "http://localhost:8000",
+		"timeout":             "30s",
+		"retries":             3,
 		"concurrent_requests": 10,
-		"verbose":            false,
-		"color":              true,
-		"format":             "table",
+		"verbose":             false,
+		"color":               true,
+		"format":              "table",
 		"chat": map[string]interface{}{
-			"default_room":           1,
-			"message_history_limit":  50,
-			"auto_reconnect":         true,
-			"ping_interval":          "30s",
+			"default_room":          1,
+			"message_history_limit": 50,
+			"auto_reconnect":        true,
+			"ping_interval":         "30s",
 		},
 		"security": map[string]interface{}{
 			"test_timeout":         "60s",
@@ -213,17 +217,17 @@ func runConfigInit(cmd *cobra.Command, args []string) error {
 			"report_format":        "json",
 		},
 		"benchmark": map[string]interface{}{
-			"default_duration":      "30s",
-			"default_concurrent":    10,
-			"response_time_target":  "1ms",
-			"microsecond_samples":   1000,
+			"default_duration":     "30s",
+			"default_concurrent":   10,
+			"response_time_target": "1ms",
+			"microsecond_samples":  1000,
 		},
 		"logging": map[string]interface{}{
 			"level":  "info",
 			"format": "text",
 		},
 		"features": map[string]interface{}{
-			"experimental_commands":   false,
+			"experimental_commands":  false,
 			"beta_features":          false,
 			"advanced_security":      true,
 			"performance_monitoring": true,
@@ -264,11 +268,11 @@ func runConfigEdit(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("Opening %s with %s...\n", configFile, editor)
-	
+
 	// Note: In a real implementation, you would use os/exec to launch the editor
 	// For this example, we'll just show the path
 	color.Yellow("Please manually edit the file: %s", configFile)
-	
+
 	return nil
 }
 
@@ -359,7 +363,9 @@ func runConfigRestore(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to get home directory: %w", err)
 		}
-		configFile = filepath.Join(home, ".plexichat-client.yaml")
+		configDir := filepath.Join(home, ".plexichat-app")
+		os.MkdirAll(configDir, 0755)
+		configFile = filepath.Join(configDir, "config.yaml")
 	}
 
 	// Copy backup to config file

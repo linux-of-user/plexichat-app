@@ -10,13 +10,13 @@ A **professional, feature-rich desktop client** for the PlexiChat messaging plat
 ## 📱 Applications
 
 - **`plexichat-cli.exe`** - Full-featured command-line interface
-- **`plexichat-gui.exe`** - Modern Discord-like graphical interface
+- **`plexichat-gui.exe`** - Modern graphical messaging interface
 
 ## ✨ Key Features
 
 ### 🖥️ **Dual Interface**
 - **CLI Application**: Interactive commands, configuration management, real-time chat
-- **GUI Application**: Modern Discord-like interface with professional design
+- **GUI Application**: Modern messaging interface with professional design
 
 ### 💬 **Real-time Communication**
 - **WebSocket messaging** with automatic reconnection
@@ -66,7 +66,7 @@ A **professional, feature-rich desktop client** for the PlexiChat messaging plat
 ## 🚀 Quick Start
 
 ### 📦 Download & Run
-1. **Download** the latest release from [Releases](https://github.com/yourusername/plexichat-client/releases)
+1. **Download** the latest release from [Releases](https://github.com/linux-of-user/plexichat-app/releases)
 2. **Extract** the archive
 3. **Run** the application:
    ```bash
@@ -84,8 +84,8 @@ A **professional, feature-rich desktop client** for the PlexiChat messaging plat
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/plexichat-client.git
-cd plexichat-client
+git clone https://github.com/linux-of-user/plexichat-app.git
+cd plexichat-app
 
 # Build CLI
 go build -o plexichat-cli.exe plexichat-cli.go
@@ -170,9 +170,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-- 📖 [Documentation](https://github.com/yourusername/plexichat-desktop/wiki)
-- 🐛 [Report Issues](https://github.com/yourusername/plexichat-desktop/issues)
-- 💬 [Discussions](https://github.com/yourusername/plexichat-desktop/discussions)
+- 📖 [Documentation](https://github.com/linux-of-user/plexichat-app/wiki)
+- 🐛 [Report Issues](https://github.com/linux-of-user/plexichat-app/issues)
+- 💬 [Discussions](https://github.com/linux-of-user/plexichat-app/discussions)
 
 ---
 

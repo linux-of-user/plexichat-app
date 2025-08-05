@@ -145,7 +145,7 @@ The GUI application includes:
 - Error handling with user-friendly messages
 
 ### **Main Interface**
-- **Discord-like layout** with modern design
+- **Modern messaging layout** with professional design
 - **Three-panel layout**: conversations, chat, notifications
 - **Real-time messaging** with timestamps and avatars
 - **User list** with online status indicators
