@@ -16,6 +16,7 @@ import (
 
 	"plexichat-client/pkg/errors"
 	"plexichat-client/pkg/logging"
+	"plexichat-client/pkg/security"
 
 	"github.com/gorilla/websocket"
 )
@@ -122,13 +123,32 @@ func (c *Client) SetTimeout(timeout time.Duration) {
 
 // Request makes an HTTP request to the PlexiChat API with retry logic
 func (c *Client) Request(ctx context.Context, method, endpoint string, body interface{}) (*http.Response, error) {
+	// Security validation
+	if !security.IsValidHTTPMethod(method) {
+		return nil, errors.NewValidationError("INVALID_METHOD", "Invalid HTTP method").WithContext("method", method)
+	}
+
+	if !security.IsValidEndpoint(endpoint) {
+		return nil, errors.NewValidationError("INVALID_ENDPOINT", "Invalid endpoint").WithContext("endpoint", endpoint)
+	}
+
 	var reqBodyBytes []byte
 
 	if body != nil {
+		// Validate request body for security
+		if err := security.ValidateRequestBody(body); err != nil {
+			return nil, errors.NewValidationError("INVALID_BODY", "Request body validation failed").WithContext("error", err.Error())
+		}
+
 		var err error
 		reqBodyBytes, err = json.Marshal(body)
 		if err != nil {
 			return nil, errors.NewValidationError("MARSHAL_ERROR", "Failed to marshal request body").WithContext("error", err.Error())
+		}
+
+		// Check body size limit (10MB)
+		if len(reqBodyBytes) > 10*1024*1024 {
+			return nil, errors.NewValidationError("BODY_TOO_LARGE", "Request body exceeds size limit")
 		}
 	}
 

@@ -1,6 +1,7 @@
 package security
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/mail"
 	"regexp"
@@ -360,4 +361,131 @@ func getFileExtension(filename string) string {
 		return ""
 	}
 	return "." + parts[len(parts)-1]
+}
+
+// ContainsMaliciousContent checks for malicious content patterns
+func ContainsMaliciousContent(content string) bool {
+	if content == "" {
+		return false
+	}
+
+	// Convert to lowercase for case-insensitive matching
+	lowerContent := strings.ToLower(content)
+
+	// Check for XSS patterns
+	if containsXSSPatterns(content) {
+		return true
+	}
+
+	// Check for SQL injection patterns
+	sqlPatterns := []string{
+		"union select", "drop table", "delete from", "insert into",
+		"update set", "create table", "alter table", "exec(",
+		"execute(", "sp_", "xp_", "cmdshell", "openrowset",
+	}
+
+	for _, pattern := range sqlPatterns {
+		if strings.Contains(lowerContent, pattern) {
+			return true
+		}
+	}
+
+	// Check for command injection patterns
+	cmdPatterns := []string{
+		"$(", "`", "&&", "||", ";", "|", "&", ">>", "<<",
+		"wget", "curl", "nc ", "netcat", "bash", "sh ",
+		"cmd.exe", "powershell", "eval(", "system(",
+	}
+
+	for _, pattern := range cmdPatterns {
+		if strings.Contains(lowerContent, pattern) {
+			return true
+		}
+	}
+
+	// Check for path traversal patterns
+	pathPatterns := []string{
+		"../", "..\\", "/etc/", "/proc/", "/sys/", "/dev/",
+		"c:\\", "d:\\", "windows\\", "system32\\",
+	}
+
+	for _, pattern := range pathPatterns {
+		if strings.Contains(lowerContent, pattern) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// IsValidHTTPMethod validates HTTP methods
+func IsValidHTTPMethod(method string) bool {
+	validMethods := []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
+	for _, validMethod := range validMethods {
+		if method == validMethod {
+			return true
+		}
+	}
+	return false
+}
+
+// IsValidEndpoint validates API endpoints
+func IsValidEndpoint(endpoint string) bool {
+	if endpoint == "" {
+		return false
+	}
+
+	// Must start with /
+	if !strings.HasPrefix(endpoint, "/") {
+		return false
+	}
+
+	// Check for path traversal
+	if strings.Contains(endpoint, "..") {
+		return false
+	}
+
+	// Check for null bytes
+	if strings.Contains(endpoint, "\x00") {
+		return false
+	}
+
+	// Check length (max 1000 characters)
+	if len(endpoint) > 1000 {
+		return false
+	}
+
+	// Basic pattern validation - only allow alphanumeric, -, _, /, and query params
+	validPattern := regexp.MustCompile(`^/[a-zA-Z0-9\-_/\?&=.]*$`)
+	return validPattern.MatchString(endpoint)
+}
+
+// ValidateRequestBody validates request body for security
+func ValidateRequestBody(body interface{}) error {
+	if body == nil {
+		return nil
+	}
+
+	// Convert to string for validation
+	var bodyStr string
+	switch v := body.(type) {
+	case string:
+		bodyStr = v
+	case []byte:
+		bodyStr = string(v)
+	default:
+		// For other types, marshal to JSON first
+		jsonBytes, err := json.Marshal(body)
+		if err != nil {
+			return fmt.Errorf("failed to marshal body for validation: %w", err)
+		}
+		bodyStr = string(jsonBytes)
+	}
+
+	// Check for malicious content
+	if ContainsMaliciousContent(bodyStr) {
+		return fmt.Errorf("request body contains potentially malicious content")
+	}
+
+	return nil
 }

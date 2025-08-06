@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
 	"plexichat-client/pkg/logging"
+	"plexichat-client/pkg/security"
 
 	"github.com/gorilla/websocket"
 )
@@ -47,6 +49,10 @@ type Client struct {
 	Hub      *Hub
 	Channels map[string]bool // Channels the client is subscribed to
 	mu       sync.RWMutex
+
+	// Rate limiting fields
+	lastMessageTime time.Time
+	messageCount    int
 }
 
 // Hub maintains active clients and broadcasts messages
@@ -359,8 +365,48 @@ var Upgrader = websocket.Upgrader{
 
 // HandleWebSocket handles WebSocket upgrade and client management
 func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request, userID, username string) {
+	// Security validation
+	clientIP := security.GetClientIP(r)
+	userAgent := r.Header.Get("User-Agent")
+
+	// Validate authentication token
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		security.LogSecurityEvent("WEBSOCKET_AUTH_MISSING", clientIP, userAgent, "No authorization header")
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Extract and validate token
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		security.LogSecurityEvent("WEBSOCKET_AUTH_INVALID", clientIP, userAgent, "Invalid authorization format")
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+	if len(token) < 10 { // Basic token length validation
+		security.LogSecurityEvent("WEBSOCKET_AUTH_SHORT", clientIP, userAgent, "Token too short")
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Sanitize user inputs
+	userID = security.SanitizeInput(userID)
+	username = security.SanitizeInput(username)
+
+	if userID == "" || username == "" {
+		security.LogSecurityEvent("WEBSOCKET_INVALID_USER", clientIP, userAgent, "Invalid user data")
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	// Log successful connection attempt
+	security.LogSecurityEvent("WEBSOCKET_CONNECT_ATTEMPT", clientIP, userAgent, fmt.Sprintf("User: %s", username))
+
 	conn, err := Upgrader.Upgrade(w, r, nil)
 	if err != nil {
+		security.LogSecurityEvent("WEBSOCKET_UPGRADE_FAILED", clientIP, userAgent, err.Error())
 		logging.Error("WebSocket upgrade failed: %v", err)
 		return
 	}
@@ -438,9 +484,28 @@ func (c *Client) readPump() {
 			break
 		}
 
+		// Security validation for incoming messages
+		if !c.validateMessage(&message) {
+			security.LogSecurityEvent("WEBSOCKET_INVALID_MESSAGE", "", "",
+				fmt.Sprintf("User: %s, Type: %s", c.Username, message.Type))
+			continue
+		}
+
+		// Sanitize message data if it's a string
+		if dataStr, ok := message.Data.(string); ok {
+			message.Data = security.SanitizeInput(dataStr)
+		}
+
 		// Set message metadata
 		message.UserID = c.UserID
 		message.Timestamp = time.Now()
+
+		// Rate limiting check
+		if !c.checkRateLimit() {
+			security.LogSecurityEvent("WEBSOCKET_RATE_LIMIT", "", "",
+				fmt.Sprintf("User: %s exceeded rate limit", c.Username))
+			continue
+		}
 
 		// Handle different message types
 		switch message.Type {
@@ -451,5 +516,64 @@ func (c *Client) readPump() {
 		default:
 			c.Hub.broadcast <- message
 		}
+	}
+
+// validateMessage validates incoming WebSocket messages for security
+func (c *Client) validateMessage(message *Message) bool {
+	// Check message type is valid
+	switch message.Type {
+	case MessageTypeChat, MessageTypePresence, MessageTypeNotification,
+		 MessageTypeTyping, MessageTypeFileUpload, MessageTypeCommand,
+		 MessageTypePing, MessageTypePong:
+		// Valid message types
+	default:
+		return false
+	}
+
+	// Check data is not nil and not too large
+	if message.Data == nil {
+		return false
+	}
+
+	// If data is string, check length
+	if dataStr, ok := message.Data.(string); ok {
+		if len(dataStr) > 10000 { // 10KB limit
+			return false
+		}
+
+		// Check for malicious content
+		if security.ContainsMaliciousContent(dataStr) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// checkRateLimit implements basic rate limiting for WebSocket messages
+func (c *Client) checkRateLimit() bool {
+		now := time.Now()
+
+		// Initialize rate limit tracking if needed
+		if c.lastMessageTime.IsZero() {
+			c.lastMessageTime = now
+			c.messageCount = 1
+			return true
+		}
+
+		// Reset counter if more than 1 minute has passed
+		if now.Sub(c.lastMessageTime) > time.Minute {
+			c.messageCount = 1
+			c.lastMessageTime = now
+			return true
+		}
+
+		// Check if under rate limit (60 messages per minute)
+		if c.messageCount < 60 {
+			c.messageCount++
+			return true
+		}
+
+		return false
 	}
 }

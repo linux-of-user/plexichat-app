@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	version          = "1.0.0"
+	version          = "b.1.1-97"
 	defaultServerURL = "http://localhost:8000"
 	defaultTimeout   = 30 * time.Second
 )
