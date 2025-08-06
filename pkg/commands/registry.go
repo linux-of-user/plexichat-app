@@ -271,41 +271,20 @@ func (cr *CommandRegistry) registerBuiltinCommands() {
 	// Disconnect command
 	cr.Register(&DisconnectCommand{})
 
-	// Join command
-	cr.Register(&JoinCommand{})
-
-	// Leave command
-	cr.Register(&LeaveCommand{})
-
-	// List command
-	cr.Register(&ListCommand{})
-
-	// Send command
-	cr.Register(&SendCommand{})
-
-	// Upload command
-	cr.Register(&UploadCommand{})
-
-	// Download command
-	cr.Register(&DownloadCommand{})
-
-	// Search command
-	cr.Register(&SearchCommand{})
-
-	// History command
-	cr.Register(&HistoryCommand{})
-
-	// Users command
-	cr.Register(&UsersCommand{})
-
-	// Channels command
-	cr.Register(&ChannelsCommand{})
-
-	// Config command
-	cr.Register(&ConfigCommand{})
-
-	// Clear command
-	cr.Register(&ClearCommand{})
+	// Note: Additional commands would be implemented here
+	// For now, we'll comment out the unimplemented commands
+	// cr.Register(&JoinCommand{})
+	// cr.Register(&LeaveCommand{})
+	// cr.Register(&ListCommand{})
+	// cr.Register(&SendCommand{})
+	// cr.Register(&UploadCommand{})
+	// cr.Register(&DownloadCommand{})
+	// cr.Register(&SearchCommand{})
+	// cr.Register(&HistoryCommand{})
+	// cr.Register(&UsersCommand{})
+	// cr.Register(&ChannelsCommand{})
+	// cr.Register(&ConfigCommand{})
+	// cr.Register(&ClearCommand{})
 
 	// Exit command
 	cr.Register(&ExitCommand{})

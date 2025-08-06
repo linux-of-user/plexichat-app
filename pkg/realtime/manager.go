@@ -31,21 +31,21 @@ type RealtimeManager struct {
 type EventType string
 
 const (
-	EventTypeMessage         EventType = "message"
-	EventTypeMessageEdit     EventType = "message_edit"
-	EventTypeMessageDelete   EventType = "message_delete"
-	EventTypeUserJoin        EventType = "user_join"
-	EventTypeUserLeave       EventType = "user_leave"
-	EventTypeUserTyping      EventType = "user_typing"
-	EventTypeUserStatus      EventType = "user_status"
-	EventTypeChannelCreate   EventType = "channel_create"
-	EventTypeChannelUpdate   EventType = "channel_update"
-	EventTypeChannelDelete   EventType = "channel_delete"
-	EventTypeReaction        EventType = "reaction"
-	EventTypePresence        EventType = "presence"
-	EventTypeNotification    EventType = "notification"
-	EventTypeFileUpload      EventType = "file_upload"
-	EventTypeSystemMessage   EventType = "system_message"
+	EventTypeMessage       EventType = "message"
+	EventTypeMessageEdit   EventType = "message_edit"
+	EventTypeMessageDelete EventType = "message_delete"
+	EventTypeUserJoin      EventType = "user_join"
+	EventTypeUserLeave     EventType = "user_leave"
+	EventTypeUserTyping    EventType = "user_typing"
+	EventTypeUserStatus    EventType = "user_status"
+	EventTypeChannelCreate EventType = "channel_create"
+	EventTypeChannelUpdate EventType = "channel_update"
+	EventTypeChannelDelete EventType = "channel_delete"
+	EventTypeReaction      EventType = "reaction"
+	EventTypePresence      EventType = "presence"
+	EventTypeNotification  EventType = "notification"
+	EventTypeFileUpload    EventType = "file_upload"
+	EventTypeSystemMessage EventType = "system_message"
 )
 
 // Event represents a real-time event
@@ -88,7 +88,7 @@ type UserPresence struct {
 // NewRealtimeManager creates a new real-time manager
 func NewRealtimeManager(wsClient *websocket.Client, db *database.Database) *RealtimeManager {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &RealtimeManager{
 		wsClient:    wsClient,
 		db:          db,
@@ -189,26 +189,36 @@ func (rm *RealtimeManager) PublishEvent(event *Event) {
 
 // SendMessage sends a message through WebSocket
 func (rm *RealtimeManager) SendMessage(channelID, content string) error {
-	message := &websocket.Message{
+	message := websocket.Message{
 		Type:      websocket.MessageTypeChat,
 		ChannelID: channelID,
-		Content:   content,
+		Data:      content,
 		Timestamp: time.Now(),
 	}
 
-	return rm.wsClient.SendMessage(message)
+	select {
+	case rm.wsClient.Send <- message:
+		return nil
+	default:
+		return fmt.Errorf("websocket send channel full")
+	}
 }
 
 // SendTypingIndicator sends a typing indicator
 func (rm *RealtimeManager) SendTypingIndicator(channelID string, typing bool) error {
-	message := &websocket.Message{
+	message := websocket.Message{
 		Type:      websocket.MessageTypeTyping,
 		ChannelID: channelID,
-		Content:   fmt.Sprintf(`{"typing": %t}`, typing),
+		Data:      fmt.Sprintf(`{"typing": %t}`, typing),
 		Timestamp: time.Now(),
 	}
 
-	return rm.wsClient.SendMessage(message)
+	select {
+	case rm.wsClient.Send <- message:
+		return nil
+	default:
+		return fmt.Errorf("websocket send channel full")
+	}
 }
 
 // UpdatePresence updates user presence
@@ -225,13 +235,18 @@ func (rm *RealtimeManager) UpdatePresence(status, customText string) error {
 		return fmt.Errorf("failed to marshal presence: %w", err)
 	}
 
-	message := &websocket.Message{
+	message := websocket.Message{
 		Type:      websocket.MessageTypePresence,
-		Content:   string(data),
+		Data:      string(data),
 		Timestamp: time.Now(),
 	}
 
-	return rm.wsClient.SendMessage(message)
+	select {
+	case rm.wsClient.Send <- message:
+		return nil
+	default:
+		return fmt.Errorf("websocket send channel full")
+	}
 }
 
 // processEvents processes events from the queue
@@ -252,7 +267,7 @@ func (rm *RealtimeManager) processEvents() {
 			for _, subscriber := range subscribers {
 				go func(sub EventSubscriber, evt *Event) {
 					if err := sub.OnEvent(evt); err != nil {
-						rm.logger.Error("Subscriber %s error handling event %s: %v", 
+						rm.logger.Error("Subscriber %s error handling event %s: %v",
 							sub.GetID(), evt.ID, err)
 					}
 				}(subscriber, event)
