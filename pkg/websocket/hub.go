@@ -517,14 +517,15 @@ func (c *Client) readPump() {
 			c.Hub.broadcast <- message
 		}
 	}
+}
 
 // validateMessage validates incoming WebSocket messages for security
 func (c *Client) validateMessage(message *Message) bool {
 	// Check message type is valid
 	switch message.Type {
 	case MessageTypeChat, MessageTypePresence, MessageTypeNotification,
-		 MessageTypeTyping, MessageTypeFileUpload, MessageTypeCommand,
-		 MessageTypePing, MessageTypePong:
+		MessageTypeTyping, MessageTypeJoin, MessageTypeLeave, MessageTypeError,
+		MessageTypePing, MessageTypePong:
 		// Valid message types
 	default:
 		return false
@@ -552,28 +553,27 @@ func (c *Client) validateMessage(message *Message) bool {
 
 // checkRateLimit implements basic rate limiting for WebSocket messages
 func (c *Client) checkRateLimit() bool {
-		now := time.Now()
+	now := time.Now()
 
-		// Initialize rate limit tracking if needed
-		if c.lastMessageTime.IsZero() {
-			c.lastMessageTime = now
-			c.messageCount = 1
-			return true
-		}
-
-		// Reset counter if more than 1 minute has passed
-		if now.Sub(c.lastMessageTime) > time.Minute {
-			c.messageCount = 1
-			c.lastMessageTime = now
-			return true
-		}
-
-		// Check if under rate limit (60 messages per minute)
-		if c.messageCount < 60 {
-			c.messageCount++
-			return true
-		}
-
-		return false
+	// Initialize rate limit tracking if needed
+	if c.lastMessageTime.IsZero() {
+		c.lastMessageTime = now
+		c.messageCount = 1
+		return true
 	}
+
+	// Reset counter if more than 1 minute has passed
+	if now.Sub(c.lastMessageTime) > time.Minute {
+		c.messageCount = 1
+		c.lastMessageTime = now
+		return true
+	}
+
+	// Check if under rate limit (60 messages per minute)
+	if c.messageCount < 60 {
+		c.messageCount++
+		return true
+	}
+
+	return false
 }

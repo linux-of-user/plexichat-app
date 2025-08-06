@@ -16,11 +16,11 @@ import (
 
 // AnalyticsStorage handles persistent storage of analytics data
 type AnalyticsStorage struct {
-	baseDir    string
-	logger     *logging.Logger
-	mu         sync.RWMutex
-	fileCache  map[string]*os.File
-	buffers    map[string]*bufio.Writer
+	baseDir   string
+	logger    *logging.Logger
+	mu        sync.RWMutex
+	fileCache map[string]*os.File
+	buffers   map[string]*bufio.Writer
 }
 
 // NewAnalyticsStorage creates a new analytics storage instance
@@ -105,7 +105,7 @@ func (as *AnalyticsStorage) GetEvents(startDate, endDate time.Time) ([]*Analytic
 		dateKey := d.Format("2006-01-02")
 		events, err := as.getEventsForDate(dateKey)
 		if err != nil {
-			as.logger.Warning("Failed to get events for %s: %v", dateKey, err)
+			as.logger.Warn("Failed to get events for %s: %v", dateKey, err)
 			continue
 		}
 		allEvents = append(allEvents, events...)
@@ -135,7 +135,7 @@ func (as *AnalyticsStorage) GetMetrics(startDate, endDate time.Time) ([]*Metric,
 		dateKey := d.Format("2006-01-02")
 		metrics, err := as.getMetricsForDate(dateKey)
 		if err != nil {
-			as.logger.Warning("Failed to get metrics for %s: %v", dateKey, err)
+			as.logger.Warn("Failed to get metrics for %s: %v", dateKey, err)
 			continue
 		}
 		allMetrics = append(allMetrics, metrics...)
@@ -165,7 +165,7 @@ func (as *AnalyticsStorage) GetSessions(startDate, endDate time.Time) ([]*Sessio
 		dateKey := d.Format("2006-01-02")
 		sessions, err := as.getSessionsForDate(dateKey)
 		if err != nil {
-			as.logger.Warning("Failed to get sessions for %s: %v", dateKey, err)
+			as.logger.Warn("Failed to get sessions for %s: %v", dateKey, err)
 			continue
 		}
 		allSessions = append(allSessions, sessions...)
@@ -189,7 +189,7 @@ func (as *AnalyticsStorage) CleanupOldData(retentionDays int) error {
 	defer as.mu.Unlock()
 
 	cutoffDate := time.Now().AddDate(0, 0, -retentionDays)
-	
+
 	// Get all subdirectories (dates)
 	entries, err := os.ReadDir(as.baseDir)
 	if err != nil {
@@ -271,7 +271,7 @@ func (as *AnalyticsStorage) GetStorageStats() (map[string]interface{}, error) {
 // storeEventsForDate stores events for a specific date
 func (as *AnalyticsStorage) storeEventsForDate(dateKey string, events []*AnalyticsEvent) error {
 	filePath := filepath.Join(as.baseDir, dateKey, "events.jsonl")
-	
+
 	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
@@ -298,7 +298,7 @@ func (as *AnalyticsStorage) storeEventsForDate(dateKey string, events []*Analyti
 // storeMetricsForDate stores metrics for a specific date
 func (as *AnalyticsStorage) storeMetricsForDate(dateKey string, metrics []*Metric) error {
 	filePath := filepath.Join(as.baseDir, dateKey, "metrics.jsonl")
-	
+
 	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
@@ -325,7 +325,7 @@ func (as *AnalyticsStorage) storeMetricsForDate(dateKey string, metrics []*Metri
 // storeSessionForDate stores a session for a specific date
 func (as *AnalyticsStorage) storeSessionForDate(dateKey string, session *SessionData) error {
 	filePath := filepath.Join(as.baseDir, dateKey, "sessions.jsonl")
-	
+
 	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
@@ -350,7 +350,7 @@ func (as *AnalyticsStorage) storeSessionForDate(dateKey string, session *Session
 // getEventsForDate retrieves events for a specific date
 func (as *AnalyticsStorage) getEventsForDate(dateKey string) ([]*AnalyticsEvent, error) {
 	filePath := filepath.Join(as.baseDir, dateKey, "events.jsonl")
-	
+
 	// Check if file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return []*AnalyticsEvent{}, nil
@@ -364,11 +364,11 @@ func (as *AnalyticsStorage) getEventsForDate(dateKey string) ([]*AnalyticsEvent,
 
 	var events []*AnalyticsEvent
 	scanner := bufio.NewScanner(file)
-	
+
 	for scanner.Scan() {
 		var event AnalyticsEvent
 		if err := json.Unmarshal(scanner.Bytes(), &event); err != nil {
-			as.logger.Warning("Failed to decode event: %v", err)
+			as.logger.Warn("Failed to decode event: %v", err)
 			continue
 		}
 		events = append(events, &event)
@@ -384,7 +384,7 @@ func (as *AnalyticsStorage) getEventsForDate(dateKey string) ([]*AnalyticsEvent,
 // getMetricsForDate retrieves metrics for a specific date
 func (as *AnalyticsStorage) getMetricsForDate(dateKey string) ([]*Metric, error) {
 	filePath := filepath.Join(as.baseDir, dateKey, "metrics.jsonl")
-	
+
 	// Check if file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return []*Metric{}, nil
@@ -398,11 +398,11 @@ func (as *AnalyticsStorage) getMetricsForDate(dateKey string) ([]*Metric, error)
 
 	var metrics []*Metric
 	scanner := bufio.NewScanner(file)
-	
+
 	for scanner.Scan() {
 		var metric Metric
 		if err := json.Unmarshal(scanner.Bytes(), &metric); err != nil {
-			as.logger.Warning("Failed to decode metric: %v", err)
+			as.logger.Warn("Failed to decode metric: %v", err)
 			continue
 		}
 		metrics = append(metrics, &metric)
@@ -418,7 +418,7 @@ func (as *AnalyticsStorage) getMetricsForDate(dateKey string) ([]*Metric, error)
 // getSessionsForDate retrieves sessions for a specific date
 func (as *AnalyticsStorage) getSessionsForDate(dateKey string) ([]*SessionData, error) {
 	filePath := filepath.Join(as.baseDir, dateKey, "sessions.jsonl")
-	
+
 	// Check if file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return []*SessionData{}, nil
@@ -432,11 +432,11 @@ func (as *AnalyticsStorage) getSessionsForDate(dateKey string) ([]*SessionData, 
 
 	var sessions []*SessionData
 	scanner := bufio.NewScanner(file)
-	
+
 	for scanner.Scan() {
 		var session SessionData
 		if err := json.Unmarshal(scanner.Bytes(), &session); err != nil {
-			as.logger.Warning("Failed to decode session: %v", err)
+			as.logger.Warn("Failed to decode session: %v", err)
 			continue
 		}
 		sessions = append(sessions, &session)
@@ -468,12 +468,12 @@ func (as *AnalyticsStorage) ExportData(startDate, endDate time.Time, format stri
 
 	exportData := map[string]interface{}{
 		"export_info": map[string]interface{}{
-			"start_date":   startDate,
-			"end_date":     endDate,
-			"exported_at":  time.Now(),
-			"format":       format,
-			"event_count":  len(events),
-			"metric_count": len(metrics),
+			"start_date":    startDate,
+			"end_date":      endDate,
+			"exported_at":   time.Now(),
+			"format":        format,
+			"event_count":   len(events),
+			"metric_count":  len(metrics),
 			"session_count": len(sessions),
 		},
 		"events":   events,
