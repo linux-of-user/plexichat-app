@@ -10,18 +10,17 @@ import (
 	"syscall"
 	"time"
 
-plexichat-client/pkg/analytics
-	"plexichat-client/pkg/api"
-	"plexichat-client/pkg/auth"
+	"plexichat-client/pkg/analytics"
 	"plexichat-client/pkg/cache"
 	"plexichat-client/pkg/collaboration"
-	"plexichat-client/pkg/config"
 	"plexichat-client/pkg/files"
 	"plexichat-client/pkg/logging"
 	"plexichat-client/pkg/notifications"
 	"plexichat-client/pkg/plugins"
 	"plexichat-client/pkg/security"
 	"plexichat-client/pkg/ui"
+
+	""
 )
 
 // Application represents the main PlexiChat GUI application
@@ -39,8 +38,8 @@ type Application struct {
 	notificationManager  *notifications.NotificationManager
 	collaborationManager *collaboration.CollaborationManager
 
-	ctx                  context.Context
-	cancel               context.CancelFunc
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 // NewApplication creates a new PlexiChat GUI application instance
@@ -224,8 +223,6 @@ func (app *Application) initializeComponents() error {
 	// Initialize collaboration manager
 	app.collaborationManager = collaboration.NewCollaborationManager()
 
-
-
 	app.logger.Info("All components initialized successfully")
 	return nil
 }
@@ -255,8 +252,6 @@ func (app *Application) Run() error {
 		"PlexiChat Started",
 		"PlexiChat GUI client has started successfully",
 	)
-
-
 
 	// Start UI
 	app.logger.Info("Starting graphical user interface...")

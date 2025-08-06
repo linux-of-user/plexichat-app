@@ -801,14 +801,32 @@ func (ws *WebSocketClient) attemptReconnect(ctx context.Context) {
 
 // WebSocketEvent represents a WebSocket event
 type WebSocketEvent struct {
+	ID        string                 `json:"id"`
 	Type      string                 `json:"type"`
+	Source    string                 `json:"source"`
 	Timestamp time.Time              `json:"timestamp"`
 	Data      map[string]interface{} `json:"data"`
+}
+
+// GetID returns the event ID
+func (e *WebSocketEvent) GetID() string {
+	if e.ID == "" {
+		e.ID = fmt.Sprintf("ws_%d", time.Now().UnixNano())
+	}
+	return e.ID
 }
 
 // GetType returns the event type
 func (e *WebSocketEvent) GetType() string {
 	return e.Type
+}
+
+// GetSource returns the event source
+func (e *WebSocketEvent) GetSource() string {
+	if e.Source == "" {
+		e.Source = "websocket"
+	}
+	return e.Source
 }
 
 // GetTimestamp returns the event timestamp
