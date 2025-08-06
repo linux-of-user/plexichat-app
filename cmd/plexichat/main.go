@@ -9,10 +9,11 @@ import (
 	"time"
 
 	"plexichat-client/pkg/client"
+	"plexichat-client/pkg/updater"
 )
 
 const (
-	version          = "b.1.1-97"
+	version          = "3.0.0-production"
 	defaultServerURL = "http://localhost:8000"
 	defaultTimeout   = 30 * time.Second
 )
@@ -42,6 +43,8 @@ func main() {
 		sendMessage()
 	case "upload":
 		uploadFile()
+	case "update":
+		handleUpdate()
 	case "test":
 		runTests()
 	default:
@@ -70,6 +73,7 @@ func showHelp() {
 	fmt.Println("  messages    List messages")
 	fmt.Println("  send        Send a message")
 	fmt.Println("  upload      Upload a file")
+	fmt.Println("  update      Check for and install updates")
 	fmt.Println("  test        Run connectivity tests")
 	fmt.Println()
 	fmt.Println("ENVIRONMENT VARIABLES:")
@@ -438,4 +442,50 @@ func testFilesEndpoint() error {
 	}
 
 	return nil
+}
+
+func handleUpdate() {
+	fmt.Println("🔄 Checking for updates...")
+
+	// Create updater instance
+	u := updater.NewUpdater()
+
+	// Create context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	// Check for updates
+	updateInfo, err := u.CheckForUpdates(ctx)
+	if err != nil {
+		fmt.Printf("❌ Failed to check for updates: %v\n", err)
+		os.Exit(1)
+	}
+
+	if !updateInfo.Available {
+		fmt.Printf("✅ You are running the latest version: %s\n", updateInfo.CurrentVersion)
+		return
+	}
+
+	fmt.Printf("🆕 Update available: %s -> %s\n", updateInfo.CurrentVersion, updateInfo.LatestVersion)
+	fmt.Printf("📝 Release notes:\n%s\n\n", updateInfo.ReleaseNotes)
+
+	// Ask for confirmation
+	fmt.Print("Do you want to update now? (y/N): ")
+	var response string
+	fmt.Scanln(&response)
+
+	if strings.ToLower(response) != "y" && strings.ToLower(response) != "yes" {
+		fmt.Println("Update cancelled.")
+		return
+	}
+
+	// Perform self-update
+	fmt.Println("🔄 Downloading and installing update...")
+	if err := u.SelfUpdate(ctx); err != nil {
+		fmt.Printf("❌ Update failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("✅ Update completed successfully!")
+	fmt.Println("🔄 Please restart the application to use the new version.")
 }
