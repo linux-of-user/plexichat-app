@@ -1,43 +1,30 @@
 package logging
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 	"time"
 
+	"plexichat-client/internal/interfaces"
+
 	"github.com/fatih/color"
 )
 
-// LogLevel represents the severity level of a log message
-type LogLevel int
+// Use LogLevel from interfaces package
+type LogLevel = interfaces.LogLevel
 
 const (
-	DEBUG LogLevel = iota
-	INFO
-	WARN
-	ERROR
-	FATAL
+	DEBUG LogLevel = interfaces.LogLevelDebug
+	INFO  LogLevel = interfaces.LogLevelInfo
+	WARN  LogLevel = interfaces.LogLevelWarn
+	ERROR LogLevel = interfaces.LogLevelError
+	FATAL LogLevel = interfaces.LogLevelFatal
 )
 
-// String returns the string representation of the log level
-func (l LogLevel) String() string {
-	switch l {
-	case DEBUG:
-		return "DEBUG"
-	case INFO:
-		return "INFO"
-	case WARN:
-		return "WARN"
-	case ERROR:
-		return "ERROR"
-	case FATAL:
-		return "FATAL"
-	default:
-		return "UNKNOWN"
-	}
-}
+// String method is now provided by the interfaces.LogLevel type
 
 // ParseLogLevel parses a string into a LogLevel
 func ParseLogLevel(level string) LogLevel {
@@ -236,4 +223,31 @@ func Error(format string, args ...interface{}) {
 
 func Fatal(format string, args ...interface{}) {
 	defaultLogger.Fatal(format, args...)
+}
+
+// GetLogger returns a logger with the specified name
+func GetLogger(name string) interfaces.Logger {
+	// For now, return the default logger
+	// In a more sophisticated implementation, this could return
+	// a logger with the specified name and configuration
+	return defaultLogger
+}
+
+// GetLevel returns the current log level
+func (l *Logger) GetLevel() LogLevel {
+	return l.level
+}
+
+// With returns a logger with additional fields
+func (l *Logger) With(fields ...interface{}) interfaces.Logger {
+	// For now, return the same logger
+	// In a more sophisticated implementation, this would create a new logger with the fields
+	return l
+}
+
+// WithContext returns a logger with context
+func (l *Logger) WithContext(ctx context.Context) interfaces.Logger {
+	// For now, return the same logger
+	// In a more sophisticated implementation, this would create a new logger with the context
+	return l
 }

@@ -3,18 +3,18 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
-	"github.com/spf13/cobra"
 	"plexichat-client/pkg/logging"
 	"plexichat-client/pkg/updater"
+
+	"github.com/spf13/cobra"
 )
 
 var (
-	checkOnly    bool
-	forceUpdate  bool
-	autoConfirm  bool
+	checkOnly   bool
+	forceUpdate bool
+	autoConfirm bool
 )
 
 // updateCmd represents the update command
@@ -133,7 +133,7 @@ func CheckForUpdatesBackground() {
 		}
 
 		if updateInfo.Available {
-			logging.Info("New version available: %s (current: %s)", 
+			logging.Info("New version available: %s (current: %s)",
 				updateInfo.LatestVersion, updateInfo.CurrentVersion)
 			logging.Info("Run 'plexichat-cli update' to install the update")
 		}

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"plexichat-client/internal/interfaces"
 	"plexichat-client/pkg/logging"
 )
 
@@ -18,7 +19,7 @@ type Container struct {
 	instances    map[string]interface{}
 	singletons   map[string]interface{}
 	interceptors []Interceptor
-	logger       logging.Logger
+	logger       interfaces.Logger
 	ctx          context.Context
 	cancel       context.CancelFunc
 	started      bool
@@ -164,7 +165,7 @@ func (c *Container) GetByType(interfaceType reflect.Type) ([]interface{}, error)
 
 	var instances []interface{}
 
-	for name, def := range c.services {
+	for name := range c.services {
 		instance, err := c.Get(name)
 		if err != nil {
 			continue

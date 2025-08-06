@@ -4,6 +4,7 @@ package networking
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -13,19 +14,19 @@ import (
 
 // CircuitBreakerImpl implements the CircuitBreaker interface
 type CircuitBreakerImpl struct {
-	name                string
-	maxRequests         uint32
-	interval            time.Duration
-	timeout             time.Duration
-	failureThreshold    uint32
-	successThreshold    uint32
-	onStateChange       func(name string, from, to interfaces.CircuitBreakerState)
-	
-	mu                  sync.RWMutex
-	state               interfaces.CircuitBreakerState
-	generation          uint64
-	counts              *Counts
-	expiry              time.Time
+	name             string
+	maxRequests      uint32
+	interval         time.Duration
+	timeout          time.Duration
+	failureThreshold uint32
+	successThreshold uint32
+	onStateChange    func(name string, from, to interfaces.CircuitBreakerState)
+
+	mu         sync.RWMutex
+	state      interfaces.CircuitBreakerState
+	generation uint64
+	counts     *Counts
+	expiry     time.Time
 }
 
 // Counts holds the numbers of requests and their successes/failures
@@ -39,12 +40,12 @@ type Counts struct {
 
 // CircuitBreakerConfig contains configuration for circuit breaker
 type CircuitBreakerConfig struct {
-	Name             string                                                                    `json:"name"`
-	MaxRequests      uint32                                                                    `json:"max_requests"`
-	Interval         time.Duration                                                             `json:"interval"`
-	Timeout          time.Duration                                                             `json:"timeout"`
-	FailureThreshold uint32                                                                    `json:"failure_threshold"`
-	SuccessThreshold uint32                                                                    `json:"success_threshold"`
+	Name             string                                                     `json:"name"`
+	MaxRequests      uint32                                                     `json:"max_requests"`
+	Interval         time.Duration                                              `json:"interval"`
+	Timeout          time.Duration                                              `json:"timeout"`
+	FailureThreshold uint32                                                     `json:"failure_threshold"`
+	SuccessThreshold uint32                                                     `json:"success_threshold"`
 	OnStateChange    func(name string, from, to interfaces.CircuitBreakerState) `json:"-"`
 }
 
@@ -117,7 +118,7 @@ func (cb *CircuitBreakerImpl) GetMetrics() interfaces.CircuitBreakerMetrics {
 		Requests:    int64(cb.counts.Requests),
 		Successes:   int64(cb.counts.TotalSuccesses),
 		Failures:    int64(cb.counts.TotalFailures),
-		Timeouts:    0, // TODO: Track timeouts separately
+		Timeouts:    0,           // TODO: Track timeouts separately
 		LastFailure: time.Time{}, // TODO: Track last failure time
 		LastSuccess: time.Time{}, // TODO: Track last success time
 	}

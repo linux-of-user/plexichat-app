@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -24,19 +23,19 @@ func (e *CacheEntry) IsExpired() bool {
 
 // Cache provides intelligent caching for API responses
 type Cache struct {
-	mu       sync.RWMutex
-	entries  map[string]*CacheEntry
-	ttl      map[string]time.Duration
-	maxSize  int
-	logger   *logging.Logger
+	mu      sync.RWMutex
+	entries map[string]*CacheEntry
+	ttl     map[string]time.Duration
+	maxSize int
+	logger  *logging.Logger
 }
 
 // CacheConfig holds cache configuration
 type CacheConfig struct {
-	MaxSize         int                       `json:"max_size"`
-	DefaultTTL      time.Duration             `json:"default_ttl"`
-	TypeSpecificTTL map[string]time.Duration  `json:"type_specific_ttl"`
-	Enabled         bool                      `json:"enabled"`
+	MaxSize         int                      `json:"max_size"`
+	DefaultTTL      time.Duration            `json:"default_ttl"`
+	TypeSpecificTTL map[string]time.Duration `json:"type_specific_ttl"`
+	Enabled         bool                     `json:"enabled"`
 }
 
 // DefaultCacheConfig returns default cache configuration
@@ -81,7 +80,7 @@ func (c *Cache) Get(cacheType, identifier string) (interface{}, bool) {
 
 	key := c.generateKey(cacheType, identifier)
 	entry, exists := c.entries[key]
-	
+
 	if !exists {
 		c.logger.Debug("Cache miss: %s", key)
 		return nil, false
@@ -109,7 +108,7 @@ func (c *Cache) Set(cacheType, identifier string, data interface{}) {
 
 	key := c.generateKey(cacheType, identifier)
 	ttl := c.getTTL(cacheType)
-	
+
 	entry := &CacheEntry{
 		Data:      data,
 		ExpiresAt: time.Now().Add(ttl),
@@ -225,7 +224,7 @@ func (c *Cache) Stats() map[string]interface{} {
 	// Count by type
 	typeCounts := make(map[string]int)
 	expiredCount := 0
-	
+
 	for key, entry := range c.entries {
 		// Extract type from key
 		if colonIndex := len(key); colonIndex > 0 {
@@ -237,7 +236,7 @@ func (c *Cache) Stats() map[string]interface{} {
 				}
 			}
 		}
-		
+
 		if entry.IsExpired() {
 			expiredCount++
 		}
@@ -263,7 +262,7 @@ func NewCachedClient(apiClient *client.Client, config *CacheConfig) *CachedClien
 	}
 
 	cache := NewCache(config)
-	
+
 	// Start cleanup routine
 	cache.StartCleanupRoutine(1 * time.Minute)
 
@@ -301,7 +300,7 @@ func (c *CachedClient) GetUser(userID string) (*client.UserResponse, error) {
 // GetMessages gets messages with caching
 func (c *CachedClient) GetMessages(otherUserID string, limit, page int) (*client.MessageListResponse, error) {
 	cacheKey := fmt.Sprintf("%s:%d:%d", otherUserID, limit, page)
-	
+
 	if c.enabled {
 		if cached, found := c.cache.Get("messages", cacheKey); found {
 			if messages, ok := cached.(*client.MessageListResponse); ok {
@@ -344,7 +343,7 @@ func (c *CachedClient) GetCacheStats() map[string]interface{} {
 	if !c.enabled {
 		return map[string]interface{}{"enabled": false}
 	}
-	
+
 	stats := c.cache.Stats()
 	stats["enabled"] = true
 	return stats

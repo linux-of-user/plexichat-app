@@ -42,53 +42,53 @@ const (
 
 // TestResult represents the result of a test execution
 type TestResult struct {
-	Name        string        `json:"name"`
-	Type        TestType      `json:"type"`
-	Status      TestStatus    `json:"status"`
-	Duration    time.Duration `json:"duration"`
-	StartTime   time.Time     `json:"start_time"`
-	EndTime     time.Time     `json:"end_time"`
-	Error       string        `json:"error,omitempty"`
-	Message     string        `json:"message,omitempty"`
-	Assertions  int           `json:"assertions"`
-	Passed      int           `json:"passed"`
-	Failed      int           `json:"failed"`
+	Name        string                 `json:"name"`
+	Type        TestType               `json:"type"`
+	Status      TestStatus             `json:"status"`
+	Duration    time.Duration          `json:"duration"`
+	StartTime   time.Time              `json:"start_time"`
+	EndTime     time.Time              `json:"end_time"`
+	Error       string                 `json:"error,omitempty"`
+	Message     string                 `json:"message,omitempty"`
+	Assertions  int                    `json:"assertions"`
+	Passed      int                    `json:"passed"`
+	Failed      int                    `json:"failed"`
 	Metadata    map[string]interface{} `json:"metadata"`
-	Logs        []string      `json:"logs"`
-	Screenshots []string      `json:"screenshots,omitempty"`
+	Logs        []string               `json:"logs"`
+	Screenshots []string               `json:"screenshots,omitempty"`
 }
 
 // TestSuite represents a collection of tests
 type TestSuite struct {
-	Name        string                 `json:"name"`
-	Description string                 `json:"description"`
-	Type        TestType               `json:"type"`
-	Tests       []*TestCase            `json:"tests"`
-	SetupFunc   func() error           `json:"-"`
-	TeardownFunc func() error          `json:"-"`
-	BeforeEach  func() error           `json:"-"`
-	AfterEach   func() error           `json:"-"`
-	Timeout     time.Duration          `json:"timeout"`
-	Parallel    bool                   `json:"parallel"`
-	Tags        []string               `json:"tags"`
-	Metadata    map[string]interface{} `json:"metadata"`
+	Name         string                 `json:"name"`
+	Description  string                 `json:"description"`
+	Type         TestType               `json:"type"`
+	Tests        []*TestCase            `json:"tests"`
+	SetupFunc    func() error           `json:"-"`
+	TeardownFunc func() error           `json:"-"`
+	BeforeEach   func() error           `json:"-"`
+	AfterEach    func() error           `json:"-"`
+	Timeout      time.Duration          `json:"timeout"`
+	Parallel     bool                   `json:"parallel"`
+	Tags         []string               `json:"tags"`
+	Metadata     map[string]interface{} `json:"metadata"`
 }
 
 // TestCase represents an individual test
 type TestCase struct {
-	Name        string                 `json:"name"`
-	Description string                 `json:"description"`
-	Type        TestType               `json:"type"`
-	TestFunc    func(*TestContext) error `json:"-"`
-	SetupFunc   func() error           `json:"-"`
-	TeardownFunc func() error          `json:"-"`
-	Timeout     time.Duration          `json:"timeout"`
-	Skip        bool                   `json:"skip"`
-	SkipReason  string                 `json:"skip_reason,omitempty"`
-	Tags        []string               `json:"tags"`
-	Dependencies []string              `json:"dependencies"`
-	Metadata    map[string]interface{} `json:"metadata"`
-	Result      *TestResult            `json:"result,omitempty"`
+	Name         string                   `json:"name"`
+	Description  string                   `json:"description"`
+	Type         TestType                 `json:"type"`
+	TestFunc     func(*TestContext) error `json:"-"`
+	SetupFunc    func() error             `json:"-"`
+	TeardownFunc func() error             `json:"-"`
+	Timeout      time.Duration            `json:"timeout"`
+	Skip         bool                     `json:"skip"`
+	SkipReason   string                   `json:"skip_reason,omitempty"`
+	Tags         []string                 `json:"tags"`
+	Dependencies []string                 `json:"dependencies"`
+	Metadata     map[string]interface{}   `json:"metadata"`
+	Result       *TestResult              `json:"result,omitempty"`
 }
 
 // TestContext provides context and utilities for test execution
@@ -106,13 +106,13 @@ type TestContext struct {
 
 // TestFramework manages test execution and reporting
 type TestFramework struct {
-	suites      []*TestSuite
-	results     []*TestResult
-	config      *TestConfig
-	logger      *logging.Logger
-	mu          sync.RWMutex
-	reporters   []TestReporter
-	hooks       *TestHooks
+	suites    []*TestSuite
+	results   []*TestResult
+	config    *TestConfig
+	logger    *logging.Logger
+	mu        sync.RWMutex
+	reporters []TestReporter
+	hooks     *TestHooks
 }
 
 // TestConfig represents test framework configuration
@@ -135,12 +135,12 @@ type TestConfig struct {
 
 // TestHooks provides hooks for test lifecycle events
 type TestHooks struct {
-	BeforeAll  func() error
-	AfterAll   func() error
+	BeforeAll   func() error
+	AfterAll    func() error
 	BeforeSuite func(*TestSuite) error
-	AfterSuite func(*TestSuite, []*TestResult) error
-	BeforeTest func(*TestCase) error
-	AfterTest  func(*TestCase, *TestResult) error
+	AfterSuite  func(*TestSuite, []*TestResult) error
+	BeforeTest  func(*TestCase) error
+	AfterTest   func(*TestCase, *TestResult) error
 }
 
 // TestReporter interface for test result reporting
@@ -200,9 +200,9 @@ func (tf *TestFramework) SetHooks(hooks *TestHooks) {
 // RunTests executes all test suites
 func (tf *TestFramework) RunTests(ctx context.Context) (*TestRunResult, error) {
 	tf.logger.Info("Starting test execution...")
-	
+
 	startTime := time.Now()
-	
+
 	// Execute before all hook
 	if tf.hooks.BeforeAll != nil {
 		if err := tf.hooks.BeforeAll(); err != nil {
@@ -253,15 +253,15 @@ func (tf *TestFramework) RunTests(ctx context.Context) (*TestRunResult, error) {
 	}
 
 	runResult := &TestRunResult{
-		StartTime:    startTime,
-		EndTime:      endTime,
-		Duration:     duration,
-		TotalTests:   len(allResults),
-		Passed:       totalPassed,
-		Failed:       totalFailed,
-		Skipped:      totalSkipped,
-		Results:      allResults,
-		Success:      totalFailed == 0,
+		StartTime:  startTime,
+		EndTime:    endTime,
+		Duration:   duration,
+		TotalTests: len(allResults),
+		Passed:     totalPassed,
+		Failed:     totalFailed,
+		Skipped:    totalSkipped,
+		Results:    allResults,
+		Success:    totalFailed == 0,
 	}
 
 	tf.logger.Info("Test execution completed: %d passed, %d failed, %d skipped (%.2fs)",
@@ -334,12 +334,12 @@ func (tf *TestFramework) RunSuite(ctx context.Context, suite *TestSuite) ([]*Tes
 // RunTest executes a single test case
 func (tf *TestFramework) RunTest(ctx context.Context, suite *TestSuite, test *TestCase) *TestResult {
 	result := &TestResult{
-		Name:       test.Name,
-		Type:       test.Type,
-		Status:     StatusPending,
-		StartTime:  time.Now(),
-		Metadata:   make(map[string]interface{}),
-		Logs:       make([]string, 0),
+		Name:      test.Name,
+		Type:      test.Type,
+		Status:    StatusPending,
+		StartTime: time.Now(),
+		Metadata:  make(map[string]interface{}),
+		Logs:      make([]string, 0),
 	}
 
 	// Check if test should be skipped
@@ -386,7 +386,7 @@ func (tf *TestFramework) RunTest(ctx context.Context, suite *TestSuite, test *Te
 		timeout = tf.config.Timeout
 	}
 
-	testCtx, cancel := context.WithTimeout(ctx, timeout)
+	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	// Execute test with retry logic
@@ -417,6 +417,11 @@ func (tf *TestFramework) RunTest(ctx context.Context, suite *TestSuite, test *Te
 
 		// Execute test function
 		if test.TestFunc != nil {
+			testCtx := &TestContext{
+				Test:   test,
+				Suite:  suite,
+				Logger: tf.logger,
+			}
 			lastErr = test.TestFunc(testCtx)
 		}
 
@@ -442,8 +447,8 @@ func (tf *TestFramework) RunTest(ctx context.Context, suite *TestSuite, test *Te
 
 		// Check for timeout
 		select {
-		case <-testCtx.Done():
-			if testCtx.Err() == context.DeadlineExceeded {
+		case <-timeoutCtx.Done():
+			if timeoutCtx.Err() == context.DeadlineExceeded {
 				lastErr = fmt.Errorf("test timed out after %v", timeout)
 			}
 		default:
@@ -462,7 +467,7 @@ func (tf *TestFramework) RunTest(ctx context.Context, suite *TestSuite, test *Te
 	result.Passed = testCtx.passed
 	result.Failed = testCtx.failed
 	result.Logs = testCtx.logs
-	
+
 	// Copy metadata
 	testCtx.mu.RLock()
 	for k, v := range testCtx.metadata {
@@ -705,15 +710,15 @@ func (tf *TestFramework) runTestsParallel(ctx context.Context, suite *TestSuite,
 
 // TestRunResult represents the overall result of a test run
 type TestRunResult struct {
-	StartTime  time.Time      `json:"start_time"`
-	EndTime    time.Time      `json:"end_time"`
-	Duration   time.Duration  `json:"duration"`
-	TotalTests int            `json:"total_tests"`
-	Passed     int            `json:"passed"`
-	Failed     int            `json:"failed"`
-	Skipped    int            `json:"skipped"`
-	Results    []*TestResult  `json:"results"`
-	Success    bool           `json:"success"`
+	StartTime  time.Time     `json:"start_time"`
+	EndTime    time.Time     `json:"end_time"`
+	Duration   time.Duration `json:"duration"`
+	TotalTests int           `json:"total_tests"`
+	Passed     int           `json:"passed"`
+	Failed     int           `json:"failed"`
+	Skipped    int           `json:"skipped"`
+	Results    []*TestResult `json:"results"`
+	Success    bool          `json:"success"`
 }
 
 // Assert provides assertion methods for test context
@@ -725,7 +730,7 @@ func (tc *TestContext) Assert() *Assertions {
 func (tc *TestContext) Log(format string, args ...interface{}) {
 	tc.mu.Lock()
 	defer tc.mu.Unlock()
-	
+
 	message := fmt.Sprintf(format, args...)
 	tc.logs = append(tc.logs, message)
 	tc.Logger.Debug("[TEST] %s", message)
@@ -754,7 +759,7 @@ type Assertions struct {
 // Equal asserts that two values are equal
 func (a *Assertions) Equal(expected, actual interface{}, message ...string) {
 	a.ctx.assertions++
-	
+
 	if reflect.DeepEqual(expected, actual) {
 		a.ctx.passed++
 	} else {
@@ -771,7 +776,7 @@ func (a *Assertions) Equal(expected, actual interface{}, message ...string) {
 // NotEqual asserts that two values are not equal
 func (a *Assertions) NotEqual(expected, actual interface{}, message ...string) {
 	a.ctx.assertions++
-	
+
 	if !reflect.DeepEqual(expected, actual) {
 		a.ctx.passed++
 	} else {
@@ -788,7 +793,7 @@ func (a *Assertions) NotEqual(expected, actual interface{}, message ...string) {
 // True asserts that a value is true
 func (a *Assertions) True(value bool, message ...string) {
 	a.ctx.assertions++
-	
+
 	if value {
 		a.ctx.passed++
 	} else {
@@ -805,7 +810,7 @@ func (a *Assertions) True(value bool, message ...string) {
 // False asserts that a value is false
 func (a *Assertions) False(value bool, message ...string) {
 	a.ctx.assertions++
-	
+
 	if !value {
 		a.ctx.passed++
 	} else {
@@ -822,7 +827,7 @@ func (a *Assertions) False(value bool, message ...string) {
 // Nil asserts that a value is nil
 func (a *Assertions) Nil(value interface{}, message ...string) {
 	a.ctx.assertions++
-	
+
 	if value == nil || (reflect.ValueOf(value).Kind() == reflect.Ptr && reflect.ValueOf(value).IsNil()) {
 		a.ctx.passed++
 	} else {
@@ -839,7 +844,7 @@ func (a *Assertions) Nil(value interface{}, message ...string) {
 // NotNil asserts that a value is not nil
 func (a *Assertions) NotNil(value interface{}, message ...string) {
 	a.ctx.assertions++
-	
+
 	if value != nil && !(reflect.ValueOf(value).Kind() == reflect.Ptr && reflect.ValueOf(value).IsNil()) {
 		a.ctx.passed++
 	} else {
@@ -856,7 +861,7 @@ func (a *Assertions) NotNil(value interface{}, message ...string) {
 // Contains asserts that a string contains a substring
 func (a *Assertions) Contains(haystack, needle string, message ...string) {
 	a.ctx.assertions++
-	
+
 	if strings.Contains(haystack, needle) {
 		a.ctx.passed++
 	} else {
@@ -873,7 +878,7 @@ func (a *Assertions) Contains(haystack, needle string, message ...string) {
 // NoError asserts that an error is nil
 func (a *Assertions) NoError(err error, message ...string) {
 	a.ctx.assertions++
-	
+
 	if err == nil {
 		a.ctx.passed++
 	} else {
@@ -890,7 +895,7 @@ func (a *Assertions) NoError(err error, message ...string) {
 // Error asserts that an error is not nil
 func (a *Assertions) Error(err error, message ...string) {
 	a.ctx.assertions++
-	
+
 	if err != nil {
 		a.ctx.passed++
 	} else {

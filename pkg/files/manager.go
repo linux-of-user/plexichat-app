@@ -5,7 +5,6 @@ import (
 	"crypto/md5"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"mime"
@@ -16,8 +15,8 @@ import (
 	"sync"
 	"time"
 
-	"	"plexichat-client/pkg/logging"
-	"plexichat-client/pkg/security""
+	"plexichat-client/pkg/logging"
+	"plexichat-client/pkg/security"
 )
 
 // FileType represents different file types
@@ -48,28 +47,28 @@ const (
 
 // FileInfo represents comprehensive file information
 type FileInfo struct {
-	ID           string            `json:"id"`
-	Name         string            `json:"name"`
-	OriginalName string            `json:"original_name"`
-	Path         string            `json:"path"`
-	Size         int64             `json:"size"`
-	Type         FileType          `json:"type"`
-	MimeType     string            `json:"mime_type"`
-	Extension    string            `json:"extension"`
-	Status       FileStatus        `json:"status"`
-	Hash         string            `json:"hash"`
-	Checksum     string            `json:"checksum"`
-	CreatedAt    time.Time         `json:"created_at"`
-	UpdatedAt    time.Time         `json:"updated_at"`
-	AccessedAt   time.Time         `json:"accessed_at"`
-	UploadedBy   string            `json:"uploaded_by"`
-	Tags         []string          `json:"tags"`
+	ID           string                 `json:"id"`
+	Name         string                 `json:"name"`
+	OriginalName string                 `json:"original_name"`
+	Path         string                 `json:"path"`
+	Size         int64                  `json:"size"`
+	Type         FileType               `json:"type"`
+	MimeType     string                 `json:"mime_type"`
+	Extension    string                 `json:"extension"`
+	Status       FileStatus             `json:"status"`
+	Hash         string                 `json:"hash"`
+	Checksum     string                 `json:"checksum"`
+	CreatedAt    time.Time              `json:"created_at"`
+	UpdatedAt    time.Time              `json:"updated_at"`
+	AccessedAt   time.Time              `json:"accessed_at"`
+	UploadedBy   string                 `json:"uploaded_by"`
+	Tags         []string               `json:"tags"`
 	Metadata     map[string]interface{} `json:"metadata"`
-	Thumbnail    *ThumbnailInfo    `json:"thumbnail,omitempty"`
-	Preview      *PreviewInfo      `json:"preview,omitempty"`
-	Versions     []*FileVersion    `json:"versions,omitempty"`
-	Permissions  *FilePermissions  `json:"permissions,omitempty"`
-	VirusScan    *VirusScanResult  `json:"virus_scan,omitempty"`
+	Thumbnail    *ThumbnailInfo         `json:"thumbnail,omitempty"`
+	Preview      *PreviewInfo           `json:"preview,omitempty"`
+	Versions     []*FileVersion         `json:"versions,omitempty"`
+	Permissions  *FilePermissions       `json:"permissions,omitempty"`
+	VirusScan    *VirusScanResult       `json:"virus_scan,omitempty"`
 }
 
 // ThumbnailInfo represents thumbnail information
@@ -82,13 +81,13 @@ type ThumbnailInfo struct {
 
 // PreviewInfo represents preview information
 type PreviewInfo struct {
-	Path        string `json:"path"`
-	Type        string `json:"type"` // image, pdf, text
-	Width       int    `json:"width,omitempty"`
-	Height      int    `json:"height,omitempty"`
-	PageCount   int    `json:"page_count,omitempty"`
-	Duration    int    `json:"duration,omitempty"` // for videos/audio
-	Generated   bool   `json:"generated"`
+	Path        string    `json:"path"`
+	Type        string    `json:"type"` // image, pdf, text
+	Width       int       `json:"width,omitempty"`
+	Height      int       `json:"height,omitempty"`
+	PageCount   int       `json:"page_count,omitempty"`
+	Duration    int       `json:"duration,omitempty"` // for videos/audio
+	Generated   bool      `json:"generated"`
 	GeneratedAt time.Time `json:"generated_at"`
 }
 
@@ -106,11 +105,11 @@ type FileVersion struct {
 
 // FilePermissions represents file access permissions
 type FilePermissions struct {
-	Owner       string   `json:"owner"`
-	Group       string   `json:"group"`
-	Permissions string   `json:"permissions"` // rwxrwxrwx format
-	Public      bool     `json:"public"`
-	SharedWith  []string `json:"shared_with,omitempty"`
+	Owner       string     `json:"owner"`
+	Group       string     `json:"group"`
+	Permissions string     `json:"permissions"` // rwxrwxrwx format
+	Public      bool       `json:"public"`
+	SharedWith  []string   `json:"shared_with,omitempty"`
 	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
 }
 
@@ -125,51 +124,51 @@ type VirusScanResult struct {
 
 // UploadProgress represents upload progress
 type UploadProgress struct {
-	FileID       string    `json:"file_id"`
-	BytesUploaded int64    `json:"bytes_uploaded"`
-	TotalBytes   int64     `json:"total_bytes"`
-	Percentage   float64   `json:"percentage"`
-	Speed        int64     `json:"speed"` // bytes per second
-	ETA          time.Duration `json:"eta"`
-	StartTime    time.Time `json:"start_time"`
-	LastUpdate   time.Time `json:"last_update"`
+	FileID        string        `json:"file_id"`
+	BytesUploaded int64         `json:"bytes_uploaded"`
+	TotalBytes    int64         `json:"total_bytes"`
+	Percentage    float64       `json:"percentage"`
+	Speed         int64         `json:"speed"` // bytes per second
+	ETA           time.Duration `json:"eta"`
+	StartTime     time.Time     `json:"start_time"`
+	LastUpdate    time.Time     `json:"last_update"`
 }
 
 // FileManagerConfig represents file manager configuration
 type FileManagerConfig struct {
-	StorageDir       string            `json:"storage_dir"`
-	ThumbnailDir     string            `json:"thumbnail_dir"`
-	PreviewDir       string            `json:"preview_dir"`
-	TempDir          string            `json:"temp_dir"`
-	MaxFileSize      int64             `json:"max_file_size"`
-	AllowedTypes     []string          `json:"allowed_types"`
-	BlockedTypes     []string          `json:"blocked_types"`
-	GenerateThumbnails bool            `json:"generate_thumbnails"`
-	GeneratePreviews bool              `json:"generate_previews"`
-	VirusScanEnabled bool              `json:"virus_scan_enabled"`
-	VersioningEnabled bool             `json:"versioning_enabled"`
-	MaxVersions      int               `json:"max_versions"`
-	CompressionEnabled bool            `json:"compression_enabled"`
-	EncryptionEnabled bool             `json:"encryption_enabled"`
-	CleanupInterval  time.Duration     `json:"cleanup_interval"`
-	RetentionDays    int               `json:"retention_days"`
-	ChunkSize        int64             `json:"chunk_size"`
-	ConcurrentUploads int              `json:"concurrent_uploads"`
-	Metadata         map[string]interface{} `json:"metadata"`
+	StorageDir         string                 `json:"storage_dir"`
+	ThumbnailDir       string                 `json:"thumbnail_dir"`
+	PreviewDir         string                 `json:"preview_dir"`
+	TempDir            string                 `json:"temp_dir"`
+	MaxFileSize        int64                  `json:"max_file_size"`
+	AllowedTypes       []string               `json:"allowed_types"`
+	BlockedTypes       []string               `json:"blocked_types"`
+	GenerateThumbnails bool                   `json:"generate_thumbnails"`
+	GeneratePreviews   bool                   `json:"generate_previews"`
+	VirusScanEnabled   bool                   `json:"virus_scan_enabled"`
+	VersioningEnabled  bool                   `json:"versioning_enabled"`
+	MaxVersions        int                    `json:"max_versions"`
+	CompressionEnabled bool                   `json:"compression_enabled"`
+	EncryptionEnabled  bool                   `json:"encryption_enabled"`
+	CleanupInterval    time.Duration          `json:"cleanup_interval"`
+	RetentionDays      int                    `json:"retention_days"`
+	ChunkSize          int64                  `json:"chunk_size"`
+	ConcurrentUploads  int                    `json:"concurrent_uploads"`
+	Metadata           map[string]interface{} `json:"metadata"`
 }
 
 // FileManager manages file operations
 type FileManager struct {
-	config        *FileManagerConfig
-	files         map[string]*FileInfo
-	uploads       map[string]*UploadProgress
-	storage       *FileStorage
-	processor     *FileProcessor
-	logger        *logging.Logger
-	mu            sync.RWMutex
-	uploadSem     chan struct{}
-	ctx           context.Context
-	cancel        context.CancelFunc
+	config    *FileManagerConfig
+	files     map[string]*FileInfo
+	uploads   map[string]*UploadProgress
+	storage   *FileStorage
+	processor *FileProcessor
+	logger    *logging.Logger
+	mu        sync.RWMutex
+	uploadSem chan struct{}
+	ctx       context.Context
+	cancel    context.CancelFunc
 }
 
 // NewFileManager creates a new file manager
@@ -530,7 +529,7 @@ func (fm *FileManager) GetStats() map[string]interface{} {
 	defer fm.mu.RUnlock()
 
 	stats := map[string]interface{}{
-		"total_files": len(fm.files),
+		"total_files":    len(fm.files),
 		"active_uploads": len(fm.uploads),
 	}
 
@@ -572,7 +571,7 @@ func (fm *FileManager) createDirectories() {
 func (fm *FileManager) validateFile(filename string) error {
 	// Check file extension
 	ext := strings.ToLower(filepath.Ext(filename))
-	
+
 	// Check blocked types
 	for _, blocked := range fm.config.BlockedTypes {
 		if strings.Contains(blocked, ext) || blocked == "*" {
@@ -584,7 +583,7 @@ func (fm *FileManager) validateFile(filename string) error {
 	if len(fm.config.AllowedTypes) > 0 {
 		allowed := false
 		mimeType := fm.detectMimeType(filename)
-		
+
 		for _, allowedType := range fm.config.AllowedTypes {
 			if strings.HasSuffix(allowedType, "*") {
 				prefix := strings.TrimSuffix(allowedType, "*")
@@ -597,7 +596,7 @@ func (fm *FileManager) validateFile(filename string) error {
 				break
 			}
 		}
-		
+
 		if !allowed {
 			return fmt.Errorf("file type not allowed: %s", ext)
 		}
@@ -608,7 +607,7 @@ func (fm *FileManager) validateFile(filename string) error {
 
 func (fm *FileManager) detectFileType(filename string) FileType {
 	ext := strings.ToLower(filepath.Ext(filename))
-	
+
 	switch {
 	case strings.Contains(".jpg.jpeg.png.gif.bmp.webp.svg", ext):
 		return FileTypeImage
@@ -675,7 +674,7 @@ func (fm *FileManager) performUpload(ctx context.Context, reader io.Reader, file
 			}
 
 			totalBytes += int64(n)
-			
+
 			// Update progress
 			fm.updateProgress(progress, totalBytes)
 
@@ -707,12 +706,12 @@ func (fm *FileManager) updateProgress(progress *UploadProgress, bytesUploaded in
 
 	now := time.Now()
 	elapsed := now.Sub(progress.StartTime)
-	
+
 	progress.BytesUploaded = bytesUploaded
 	if progress.TotalBytes > 0 {
 		progress.Percentage = float64(bytesUploaded) / float64(progress.TotalBytes) * 100
 	}
-	
+
 	if elapsed.Seconds() > 0 {
 		progress.Speed = int64(float64(bytesUploaded) / elapsed.Seconds())
 		if progress.Speed > 0 && progress.TotalBytes > 0 {
@@ -720,7 +719,7 @@ func (fm *FileManager) updateProgress(progress *UploadProgress, bytesUploaded in
 			progress.ETA = time.Duration(float64(remaining) / float64(progress.Speed) * float64(time.Second))
 		}
 	}
-	
+
 	progress.LastUpdate = now
 }
 

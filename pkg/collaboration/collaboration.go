@@ -2,7 +2,6 @@ package collaboration
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -14,14 +13,14 @@ import (
 type CollaborationType string
 
 const (
-	CollabScreenShare    CollaborationType = "screen_share"
-	CollabVoiceCall      CollaborationType = "voice_call"
-	CollabVideoCall      CollaborationType = "video_call"
-	CollabDocumentEdit   CollaborationType = "document_edit"
-	CollabWhiteboard     CollaborationType = "whiteboard"
-	CollabCodeEdit       CollaborationType = "code_edit"
-	CollabPresentation   CollaborationType = "presentation"
-	CollabRemoteControl  CollaborationType = "remote_control"
+	CollabScreenShare   CollaborationType = "screen_share"
+	CollabVoiceCall     CollaborationType = "voice_call"
+	CollabVideoCall     CollaborationType = "video_call"
+	CollabDocumentEdit  CollaborationType = "document_edit"
+	CollabWhiteboard    CollaborationType = "whiteboard"
+	CollabCodeEdit      CollaborationType = "code_edit"
+	CollabPresentation  CollaborationType = "presentation"
+	CollabRemoteControl CollaborationType = "remote_control"
 )
 
 // CollaborationStatus represents collaboration session status
@@ -79,87 +78,87 @@ type Participant struct {
 
 // SessionSettings represents session configuration
 type SessionSettings struct {
-	MaxParticipants    int           `json:"max_participants"`
-	RequireApproval    bool          `json:"require_approval"`
-	AllowRecording     bool          `json:"allow_recording"`
-	AllowScreenShare   bool          `json:"allow_screen_share"`
-	AllowFileSharing   bool          `json:"allow_file_sharing"`
-	AllowChat          bool          `json:"allow_chat"`
-	AutoRecord         bool          `json:"auto_record"`
-	RecordingQuality   string        `json:"recording_quality"`
-	SessionTimeout     time.Duration `json:"session_timeout"`
-	IdleTimeout        time.Duration `json:"idle_timeout"`
-	Password           string        `json:"password,omitempty"`
-	WaitingRoom        bool          `json:"waiting_room"`
-	MuteOnJoin         bool          `json:"mute_on_join"`
-	VideoOnJoin        bool          `json:"video_on_join"`
+	MaxParticipants  int           `json:"max_participants"`
+	RequireApproval  bool          `json:"require_approval"`
+	AllowRecording   bool          `json:"allow_recording"`
+	AllowScreenShare bool          `json:"allow_screen_share"`
+	AllowFileSharing bool          `json:"allow_file_sharing"`
+	AllowChat        bool          `json:"allow_chat"`
+	AutoRecord       bool          `json:"auto_record"`
+	RecordingQuality string        `json:"recording_quality"`
+	SessionTimeout   time.Duration `json:"session_timeout"`
+	IdleTimeout      time.Duration `json:"idle_timeout"`
+	Password         string        `json:"password,omitempty"`
+	WaitingRoom      bool          `json:"waiting_room"`
+	MuteOnJoin       bool          `json:"mute_on_join"`
+	VideoOnJoin      bool          `json:"video_on_join"`
 }
 
 // Permissions represents participant permissions
 type Permissions struct {
-	CanShare       bool `json:"can_share"`
-	CanRecord      bool `json:"can_record"`
-	CanMute        bool `json:"can_mute"`
-	CanKick        bool `json:"can_kick"`
-	CanInvite      bool `json:"can_invite"`
-	CanEdit        bool `json:"can_edit"`
-	CanPresent     bool `json:"can_present"`
-	CanControl     bool `json:"can_control"`
-	CanChat        bool `json:"can_chat"`
-	CanAnnotate    bool `json:"can_annotate"`
+	CanShare    bool `json:"can_share"`
+	CanRecord   bool `json:"can_record"`
+	CanMute     bool `json:"can_mute"`
+	CanKick     bool `json:"can_kick"`
+	CanInvite   bool `json:"can_invite"`
+	CanEdit     bool `json:"can_edit"`
+	CanPresent  bool `json:"can_present"`
+	CanControl  bool `json:"can_control"`
+	CanChat     bool `json:"can_chat"`
+	CanAnnotate bool `json:"can_annotate"`
 }
 
 // DeviceInfo represents participant device information
 type DeviceInfo struct {
-	Type         string `json:"type"`         // desktop, mobile, tablet
-	OS           string `json:"os"`           // windows, macos, linux, ios, android
-	Browser      string `json:"browser"`      // chrome, firefox, safari, edge
-	Version      string `json:"version"`
+	Type         string              `json:"type"`    // desktop, mobile, tablet
+	OS           string              `json:"os"`      // windows, macos, linux, ios, android
+	Browser      string              `json:"browser"` // chrome, firefox, safari, edge
+	Version      string              `json:"version"`
 	Capabilities *DeviceCapabilities `json:"capabilities"`
 }
 
 // DeviceCapabilities represents device capabilities
 type DeviceCapabilities struct {
-	HasCamera     bool `json:"has_camera"`
-	HasMicrophone bool `json:"has_microphone"`
-	HasSpeakers   bool `json:"has_speakers"`
-	CanShare      bool `json:"can_share"`
-	CanRecord     bool `json:"can_record"`
-	MaxResolution string `json:"max_resolution"`
+	HasCamera     bool     `json:"has_camera"`
+	HasMicrophone bool     `json:"has_microphone"`
+	HasSpeakers   bool     `json:"has_speakers"`
+	CanShare      bool     `json:"can_share"`
+	CanRecord     bool     `json:"can_record"`
+	MaxResolution string   `json:"max_resolution"`
 	Codecs        []string `json:"codecs"`
 }
 
 // RecordingInfo represents recording information
 type RecordingInfo struct {
-	ID        string    `json:"id"`
-	Status    string    `json:"status"`
-	StartedAt time.Time `json:"started_at"`
-	EndedAt   *time.Time `json:"ended_at,omitempty"`
+	ID        string        `json:"id"`
+	Status    string        `json:"status"`
+	StartedAt time.Time     `json:"started_at"`
+	EndedAt   *time.Time    `json:"ended_at,omitempty"`
 	Duration  time.Duration `json:"duration"`
-	Size      int64     `json:"size"`
-	Path      string    `json:"path"`
-	Quality   string    `json:"quality"`
-	Format    string    `json:"format"`
+	Size      int64         `json:"size"`
+	Path      string        `json:"path"`
+	Quality   string        `json:"quality"`
+	Format    string        `json:"format"`
 }
 
 // CollaborationEvent represents collaboration events
 type CollaborationEvent struct {
-	Type        string                 `json:"type"`
-	SessionID   string                 `json:"session_id"`
-	UserID      string                 `json:"user_id"`
-	Data        map[string]interface{} `json:"data"`
-	Timestamp   time.Time              `json:"timestamp"`
+	Type      string                 `json:"type"`
+	SessionID string                 `json:"session_id"`
+	UserID    string                 `json:"user_id"`
+	Data      map[string]interface{} `json:"data"`
+	Timestamp time.Time              `json:"timestamp"`
 }
 
 // CollaborationManager manages collaboration sessions
 type CollaborationManager struct {
-	sessions    map[string]*CollaborationSession
-	handlers    map[string]CollaborationHandler
-	logger      *logging.Logger
-	mu          sync.RWMutex
-	eventChan   chan *CollaborationEvent
-	ctx         context.Context
-	cancel      context.CancelFunc
+	sessions  map[string]*CollaborationSession
+	handlers  map[string]CollaborationHandler
+	logger    *logging.Logger
+	mu        sync.RWMutex
+	eventChan chan *CollaborationEvent
+	ctx       context.Context
+	cancel    context.CancelFunc
 }
 
 // CollaborationHandler interface for handling collaboration events
@@ -336,7 +335,7 @@ func (cm *CollaborationManager) LeaveSession(sessionID, userID string) error {
 	}
 
 	// Find and remove participant
-	for i, participant := range session.Participants {
+	for _, participant := range session.Participants {
 		if participant.UserID == userID {
 			now := time.Now()
 			participant.LeftAt = &now
@@ -496,8 +495,8 @@ func (cm *CollaborationManager) UpdateParticipantRole(sessionID, hostID, targetU
 				SessionID: sessionID,
 				UserID:    targetUserID,
 				Data: map[string]interface{}{
-					"old_role": string(oldRole),
-					"new_role": string(newRole),
+					"old_role":   string(oldRole),
+					"new_role":   string(newRole),
 					"changed_by": hostID,
 				},
 				Timestamp: time.Now(),

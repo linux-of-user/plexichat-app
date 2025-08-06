@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"plugin"
-	"reflect"
 	"sync"
 	"time"
 
@@ -18,106 +17,106 @@ import (
 type PluginType string
 
 const (
-	PluginTypeIntegration   PluginType = "integration"
-	PluginTypeTheme         PluginType = "theme"
-	PluginTypeCommand       PluginType = "command"
-	PluginTypeNotification  PluginType = "notification"
+	PluginTypeIntegration    PluginType = "integration"
+	PluginTypeTheme          PluginType = "theme"
+	PluginTypeCommand        PluginType = "command"
+	PluginTypeNotification   PluginType = "notification"
 	PluginTypeAuthentication PluginType = "authentication"
-	PluginTypeStorage       PluginType = "storage"
-	PluginTypeTransport     PluginType = "transport"
-	PluginTypeFilter        PluginType = "filter"
-	PluginTypeBot           PluginType = "bot"
-	PluginTypeAnalytics     PluginType = "analytics"
+	PluginTypeStorage        PluginType = "storage"
+	PluginTypeTransport      PluginType = "transport"
+	PluginTypeFilter         PluginType = "filter"
+	PluginTypeBot            PluginType = "bot"
+	PluginTypeAnalytics      PluginType = "analytics"
 )
 
 // PluginStatus represents plugin status
 type PluginStatus string
 
 const (
-	StatusLoaded    PluginStatus = "loaded"
-	StatusActive    PluginStatus = "active"
-	StatusInactive  PluginStatus = "inactive"
-	StatusError     PluginStatus = "error"
-	StatusUnloaded  PluginStatus = "unloaded"
+	StatusLoaded   PluginStatus = "loaded"
+	StatusActive   PluginStatus = "active"
+	StatusInactive PluginStatus = "inactive"
+	StatusError    PluginStatus = "error"
+	StatusUnloaded PluginStatus = "unloaded"
 )
 
 // PluginManifest describes a plugin
 type PluginManifest struct {
-	Name         string            `json:"name"`
-	Version      string            `json:"version"`
-	Description  string            `json:"description"`
-	Author       string            `json:"author"`
-	License      string            `json:"license"`
-	Homepage     string            `json:"homepage"`
-	Type         PluginType        `json:"type"`
-	EntryPoint   string            `json:"entry_point"`
-	Dependencies []string          `json:"dependencies"`
-	Permissions  []string          `json:"permissions"`
+	Name         string                 `json:"name"`
+	Version      string                 `json:"version"`
+	Description  string                 `json:"description"`
+	Author       string                 `json:"author"`
+	License      string                 `json:"license"`
+	Homepage     string                 `json:"homepage"`
+	Type         PluginType             `json:"type"`
+	EntryPoint   string                 `json:"entry_point"`
+	Dependencies []string               `json:"dependencies"`
+	Permissions  []string               `json:"permissions"`
 	Config       map[string]interface{} `json:"config"`
-	MinVersion   string            `json:"min_version"`
-	MaxVersion   string            `json:"max_version"`
-	Tags         []string          `json:"tags"`
-	CreatedAt    time.Time         `json:"created_at"`
-	UpdatedAt    time.Time         `json:"updated_at"`
+	MinVersion   string                 `json:"min_version"`
+	MaxVersion   string                 `json:"max_version"`
+	Tags         []string               `json:"tags"`
+	CreatedAt    time.Time              `json:"created_at"`
+	UpdatedAt    time.Time              `json:"updated_at"`
 }
 
 // Plugin represents a loaded plugin
 type Plugin struct {
-	Manifest   *PluginManifest `json:"manifest"`
-	Status     PluginStatus    `json:"status"`
-	Instance   PluginInterface `json:"-"`
-	LoadedAt   time.Time       `json:"loaded_at"`
-	LastError  string          `json:"last_error,omitempty"`
-	Config     map[string]interface{} `json:"config"`
-	Metrics    *PluginMetrics  `json:"metrics"`
+	Manifest  *PluginManifest        `json:"manifest"`
+	Status    PluginStatus           `json:"status"`
+	Instance  PluginInterface        `json:"-"`
+	LoadedAt  time.Time              `json:"loaded_at"`
+	LastError string                 `json:"last_error,omitempty"`
+	Config    map[string]interface{} `json:"config"`
+	Metrics   *PluginMetrics         `json:"metrics"`
 }
 
 // PluginMetrics tracks plugin performance
 type PluginMetrics struct {
-	CallCount     int64         `json:"call_count"`
-	TotalDuration time.Duration `json:"total_duration"`
+	CallCount       int64         `json:"call_count"`
+	TotalDuration   time.Duration `json:"total_duration"`
 	AverageDuration time.Duration `json:"average_duration"`
-	ErrorCount    int64         `json:"error_count"`
-	LastCall      time.Time     `json:"last_call"`
-	LastError     time.Time     `json:"last_error"`
+	ErrorCount      int64         `json:"error_count"`
+	LastCall        time.Time     `json:"last_call"`
+	LastError       time.Time     `json:"last_error"`
 }
 
 // PluginInterface defines the interface all plugins must implement
 type PluginInterface interface {
 	// Initialize initializes the plugin with configuration
 	Initialize(config map[string]interface{}) error
-	
+
 	// Start starts the plugin
 	Start(ctx context.Context) error
-	
+
 	// Stop stops the plugin
 	Stop() error
-	
+
 	// GetInfo returns plugin information
 	GetInfo() *PluginInfo
-	
+
 	// HandleEvent handles events from the application
 	HandleEvent(event *PluginEvent) error
-	
+
 	// GetCommands returns commands provided by this plugin
 	GetCommands() []*PluginCommand
-	
+
 	// ExecuteCommand executes a plugin command
 	ExecuteCommand(command string, args map[string]interface{}) (interface{}, error)
-	
+
 	// GetConfigSchema returns the configuration schema
 	GetConfigSchema() map[string]interface{}
-	
+
 	// Validate validates the plugin configuration
 	Validate(config map[string]interface{}) error
 }
 
 // PluginInfo contains basic plugin information
 type PluginInfo struct {
-	Name        string    `json:"name"`
-	Version     string    `json:"version"`
-	Description string    `json:"description"`
-	Author      string    `json:"author"`
+	Name        string     `json:"name"`
+	Version     string     `json:"version"`
+	Description string     `json:"description"`
+	Author      string     `json:"author"`
 	Type        PluginType `json:"type"`
 }
 
@@ -132,12 +131,12 @@ type PluginEvent struct {
 
 // PluginCommand represents a command provided by a plugin
 type PluginCommand struct {
-	Name        string            `json:"name"`
-	Description string            `json:"description"`
-	Usage       string            `json:"usage"`
+	Name        string             `json:"name"`
+	Description string             `json:"description"`
+	Usage       string             `json:"usage"`
 	Parameters  []CommandParameter `json:"parameters"`
-	Category    string            `json:"category"`
-	Hidden      bool              `json:"hidden"`
+	Category    string             `json:"category"`
+	Hidden      bool               `json:"hidden"`
 }
 
 // CommandParameter represents a command parameter
@@ -152,12 +151,12 @@ type CommandParameter struct {
 
 // PluginManager manages plugin lifecycle
 type PluginManager struct {
-	plugins     map[string]*Plugin
-	pluginDir   string
-	logger      *logging.Logger
-	mu          sync.RWMutex
-	eventBus    *EventBus
-	registry    *PluginRegistry
+	plugins   map[string]*Plugin
+	pluginDir string
+	logger    *logging.Logger
+	mu        sync.RWMutex
+	eventBus  *EventBus
+	registry  *PluginRegistry
 }
 
 // NewPluginManager creates a new plugin manager
@@ -215,12 +214,12 @@ func (pm *PluginManager) LoadPlugin(pluginPath string) error {
 
 	// Create plugin
 	pluginObj := &Plugin{
-		Manifest:  &manifest,
-		Status:    StatusLoaded,
-		Instance:  instance,
-		LoadedAt:  time.Now(),
-		Config:    manifest.Config,
-		Metrics:   &PluginMetrics{},
+		Manifest: &manifest,
+		Status:   StatusLoaded,
+		Instance: instance,
+		LoadedAt: time.Now(),
+		Config:   manifest.Config,
+		Metrics:  &PluginMetrics{},
 	}
 
 	// Initialize plugin
